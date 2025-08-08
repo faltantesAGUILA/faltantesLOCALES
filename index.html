@@ -197,7 +197,11 @@
     function addItemToList(storeId, id, item){
       const ul = document.getElementById(storeId+'-list'); if(!ul) return;
       const li = document.createElement('li'); li.id = `${storeId}-${id}`;
+      if (isAdmin) {
       li.textContent = `${item.text} (por: ${item.createdBy || '—'})`;
+    } else {
+      li.textContent = item.text;
+    }
       if (isAdmin){
         const btn = document.createElement('button'); btn.textContent='Eliminar'; btn.className='btn-danger'; btn.style.marginLeft='8px';
         btn.onclick = ()=>{ if(confirm('Eliminar este artículo?')) db.ref(`stores/${storeId}/items/${id}`).remove(); };
