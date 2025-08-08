@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Faltantes de Locales</title>
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    /* Estilo Dark Mode inspirado en ChatGPT con mejoras UI */
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 20px;
+      background-color: #202124;
+      color: #e8eaed;
+    }
+    .main-title {
+      font-size: 2rem;
+      text-align: center;
+      margin-bottom: 20px;
+      background: linear-gradient(90deg, #4a90e2, #10a37f);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 600;
+    }
+    .store {
+      background: #2e2f31;
+      border: 1px solid #3c3d3f;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+      transition: transform 0.2s;
+    }
+    .store:hover {
+      transform: translateY(-4px);
+    }
+    .store h2 {
+      margin-top: 0;
+      font-size: 1.5em;
+      color: #e8eaed;
+    }
+    .item-input {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .item-input input {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #3c3d3f;
+      border-radius: 4px;
+      background-color: #2e2f31;
+      color: #e8eaed;
+      transition: border-color 0.2s;
+    }
+    .item-input input:focus {
+      outline: none;
+      border-color: #4a90e2;
+    }
+    .item-input input::placeholder {
+      color: #9aa0a6;
+    }
+    .item-input button {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      background-color: #4a90e2;
+      color: white;
+      transition: background-color 0.2s, transform 0.1s;
+    }
+    .item-input button:hover {
+      background-color: #367ac2;
+    }
+    .item-input button:active {
+      transform: scale(0.97);
+    }
+    ul { list-style-type: disc; margin-left: 20px; }
+    .remove-btn {
+      margin-left: 8px;
+      padding: 2px 6px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      background-color: #d93f3f;
+      color: white;
+      transition: background-color 0.2s;
+    }
+    .remove-btn:hover { background-color: #b32e2e; }
+    #login {
+      max-width: 320px;
+      margin: 50px auto;
+      text-align: center;
+      background: #2e2f31;
+      padding: 20px;
+      border-radius: 8px;
+      border: 1px solid #3c3d3f;
+    }
+    #login select,
+    #login input,
+    #login button {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 12px;
+      border: 1px solid #3c3d3f;
+      border-radius: 4px;
+      background-color: #2e2f31;
+      color: #e8eaed;
+      transition: border-color 0.2s;
+    }
+    #login select:focus,
+    #login input:focus {
+      outline: none;
+      border-color: #10a37f;
+    }
+    #login button {
+      background-color: #10a37f;
+      color: white;
+      border: none;
+      transition: background-color 0.2s, transform 0.1s;
+    }
+    #login button:hover { background-color: #0e8e71; }
+    #login button:active { transform: scale(0.97); }
+    #logout-btn {
+      margin-top: 10px;
+      padding: 8px 12px;
+      background-color: #f9ab00;
+      color: #202124;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s, transform 0.1s;
+    }
+    #logout-btn:hover { background-color: #d48800; }
+    #logout-btn:active { transform: scale(0.97); }
+  </style>
+</head>
+<body>
+  <div id="login">
+    <h1 class="main-title">Faltantes de Locales</h1>
+    <select id="username">
+      <option value="">-- Elige usuario --</option>
+      <option value="admin">Administrador</option>
+      <option value="aguila">Águila</option>
+      <option value="66">66</option>
+      <option value="parque">Parque</option>
+      <option value="market">Market</option>
+      <option value="multi">Multi</option>
+    </select>
+    <input type="password" id="password" placeholder="Contraseña" style="display:none;">
+    <button id="login-btn">Entrar</button>
+  </div>
+
+  <div id="app" style="display:none;">
+    <h1 class="main-title">Faltantes de Locales</h1>
+    <p>Usuario: <span id="current-user"></span> <span id="role"></span></p>
+    <button id="logout-btn">Cambiar usuario</button>
+
+    <div class="store" id="store1">
+      <h2>Águila</h2>
+      <div class="item-input">
+        <input type="text" id="store1-input" placeholder="Artículo faltante">
+        <button onclick="addItem('store1')">Agregar</button>
+      </div>
+      <ul id="store1-list"></ul>
+    </div>
+
+    <div class="store" id="store2">
+      <h2>66</h2>
+      <div class="item-input">
+        <input type="text" id="store2-input" placeholder="Artículo faltante">
+        <button onclick="addItem('store2')">Agregar</button>
+      </div>
+      <ul id="store2-list"></ul>
+    </div>
+
+    <div class="store" id="store3">
+      <h2>Parque</h2>
+      <div class="item-input">
+        <input type="text" id="store3-input" placeholder="Artículo faltante">
+        <button onclick="addItem('store3')">Agregar</button>
+      </div>
+      <ul id="store3-list"></ul>
+    </div>
+
+    <div class="store" id="store4">
+      <h2>Market</h2>
+      <div class="item-input">
+        <input type="text" id="store4-input" placeholder="Artículo faltante">
+        <button onclick="addItem('store4')">Agregar</button>
+      </div>
+      <ul id="store4-list"></ul>
+    </div>
+
+    <div class="store" id="store5">
+      <h2>Multi</h2>
+      <div class="item-input">
+        <input type="text" id="store5-input" placeholder="Artículo faltante">
+        <button onclick="addItem('store5')">Agregar</button>
+      </div>
+      <ul id="store5-list"></ul>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      let currentUser = '';
+      let isAdmin = false;
+      let allowedStores = [];
+
+      const storeMap = { 'aguila':['store1'], '66':['store2'], 'parque':['store3'], 'market':['store4'], 'multi':['store5'] };
+      const displayMap = { 'admin':'Administrador', 'aguila':'Águila', '66':'66', 'parque':'Parque', 'market':'Market', 'multi':'Multi' };
+      let storesData = {};
+      const STORAGE_KEY = 'storesData';
+
+      function loadData() {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        storesData = raw ? JSON.parse(raw) : {};
+        ['store1','store2','store3','store4','store5'].forEach(id => { if (!Array.isArray(storesData[id])) storesData[id]=[]; });
+      }
+      function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(storesData)); }
+
+      function renderList(storeId) {
+        const ul = document.getElementById(storeId+'-list'); ul.innerHTML='';
+        storesData[storeId].forEach((item,i)=>{
+          const li=document.createElement('li'); li.textContent=`${item.text} (por: ${item.createdBy})`;
+          if(isAdmin){ const btn=document.createElement('button'); btn.textContent='Eliminar'; btn.className='remove-btn'; btn.addEventListener('click',()=>{ if(confirm('Eliminar este artículo?')){ storesData[storeId].splice(i,1); saveData(); renderList(storeId);} }); li.appendChild(btn);} ul.appendChild(li);
+        });
+      }
+
+      function addItem(storeId){ if(!allowedStores.includes(storeId)) return; const input=document.getElementById(storeId+'-input'); const text=input.value.trim(); if(!text) return; const item={text,createdBy:displayMap[currentUser],timestamp:Date.now()}; storesData[storeId].push(item); saveData(); renderList(storeId); input.value=''; }
+      window.addItem=addItem;
+
+      // Tecla Enter para agregar
+      ['store1','store2','store3','store4','store5'].forEach(storeId=>{
+        const inp=document.getElementById(storeId+'-input');
+        inp.addEventListener('keydown', e=>{ if(e.key==='Enter'){ addItem(storeId);} });
+      });
+
+      const usernameSelect=document.getElementById('username');
+      const passwordInput=document.getElementById('password');
+      usernameSelect.addEventListener('change',()=>{ passwordInput.style.display=(usernameSelect.value==='admin')?'block':'none'; });
+
+      const loginBtn=document.getElementById('login-btn');
+      function doLogin(){
+        const user=usernameSelect.value; if(!user) return alert('Seleccione un usuario'); const u=user.toLowerCase();
+        if(u==='admin'){ if(passwordInput.value!=='admin') return alert('Contraseña incorrecta'); isAdmin=true; allowedStores=['store1','store2','store3','store4','store5']; }
+        else if(storeMap[u]){ isAdmin=false; allowedStores=storeMap[u]; }
+        else return alert('Usuario no autorizado');
+        currentUser=u;
+        document.getElementById('current-user').textContent=displayMap[u];
+        document.getElementById('role').textContent=isAdmin?'(Administrador)':'(Empleado)';
+        document.getElementById('login').style.display='none'; document.getElementById('app').style.display='block';
+        document.querySelectorAll('.store').forEach(div=>div.style.display=allowedStores.includes(div.id)?'block':'none');
+        loadData(); allowedStores.forEach(renderList);
+      }
+      loginBtn.addEventListener('click',doLogin);
+      // Enter en login
+      usernameSelect.addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+      passwordInput.addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+
+      document.getElementById('logout-btn').addEventListener('click',()=>{
+        document.getElementById('app').style.display='none'; document.getElementById('login').style.display='block'; usernameSelect.value=''; passwordInput.value=''; passwordInput.style.display='none'; document.querySelectorAll('.store').forEach(div=>div.style.display='block');
+      });
+    });
+  </script>
+</body>
+</html>
