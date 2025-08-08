@@ -7,7 +7,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
     :root{
-      --bg:#202124; --card:#2e2f31; --border:#3c3d3f; --text:#e8eaed; --muted:#9aa0a6; --primary:#10a37f; --primary2:#4a90e2; --danger:#d93f3f; --warn:#f9ab00;
+      --bg:#202124; --card:#2e2f31; --border:#3c3d3f; --text:#e8eaed; --muted:#9aa0a6;
+      --primary:#10a37f; --primary2:#4a90e2; --danger:#d93f3f; --warn:#f9ab00;
     }
     *{box-sizing:border-box}
     body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:20px;background:var(--bg);color:var(--text)}
@@ -23,10 +24,12 @@
     .btn-primary:hover{filter:brightness(1.05)}
     .btn-warn{background:var(--warn);color:#202124}
     .btn-danger{background:var(--danger);color:#fff;border:none;padding:4px 8px}
-    .topbar{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .topbar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin-bottom:12px}
+    .topbar .main-title{grid-column:2;justify-self:center;margin:0}
+    .container{max-width:1100px;margin:0 auto}
+    .userbar{grid-column:3;justify-self:end;display:flex;gap:10px;align-items:center;white-space:nowrap}
     .muted{color:var(--muted);font-size:.95rem}
     .stores{display:flex;flex-direction:column;gap:16px;margin-top:16px}
-    
     .store{border-radius:12px;border:1px solid var(--border);padding:16px;background:var(--card);transition:transform .15s}
     .store:hover{transform:translateY(-3px)}
     .store h2{margin:0 0 12px;font-size:1.25rem}
@@ -36,12 +39,12 @@
     li{margin:6px 0}
     .hidden{display:none!important}
   </style>
-  <!-- Firebase SDK (solo App + Realtime DB, sin Auth) -->
+  <!-- Firebase SDK (solo App + Realtime DB) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body>
-  <!-- LOGIN SIMPLE (dropdown) -->
+  <!-- LOGIN SIMPLE -->
   <section id="login" class="card">
     <h1 class="main-title">Faltantes de Locales</h1>
     <div style="display:grid;gap:10px">
@@ -61,64 +64,66 @@
 
   <!-- APP -->
   <section id="app" class="hidden">
-    <div class="topbar">
-      <h1 class="main-title" style="margin:0">Faltantes de Locales</h1>
-      <div>
-        <span class="muted">Usuario: <span id="who"></span> · <span id="role"></span></span>
-        <button id="logout" class="btn btn-warn" style="margin-left:10px">Cambiar usuario</button>
-      </div>
-    </div>
-
-    <div id="stores" class="stores">
-      <div class="store" id="store1">
-        <h2>Águila</h2>
-        <div class="item-input">
-          <input type="text" id="store1-input" placeholder="Artículo faltante" />
-          <button class="btn btn-primary" onclick="addItem('store1')">Agregar</button>
+    <div class="container">
+      <div class="topbar">
+        <h1 class="main-title">Faltantes de Locales</h1>
+        <div class="userbar">
+          <span class="muted" id="userTag">Usuario: —</span>
+          <button id="logout" class="btn btn-warn">Cambiar usuario</button>
         </div>
-        <ul id="store1-list"></ul>
       </div>
 
-      <div class="store" id="store2">
-        <h2>66</h2>
-        <div class="item-input">
-          <input type="text" id="store2-input" placeholder="Artículo faltante" />
-          <button class="btn btn-primary" onclick="addItem('store2')">Agregar</button>
+      <div id="stores" class="stores">
+        <div class="store" id="store1">
+          <h2>Águila</h2>
+          <div class="item-input">
+            <input type="text" id="store1-input" placeholder="Artículo faltante" />
+            <button class="btn btn-primary" onclick="addItem('store1')">Agregar</button>
+          </div>
+          <ul id="store1-list"></ul>
         </div>
-        <ul id="store2-list"></ul>
-      </div>
 
-      <div class="store" id="store3">
-        <h2>Parque</h2>
-        <div class="item-input">
-          <input type="text" id="store3-input" placeholder="Artículo faltante" />
-          <button class="btn btn-primary" onclick="addItem('store3')">Agregar</button>
+        <div class="store" id="store2">
+          <h2>66</h2>
+          <div class="item-input">
+            <input type="text" id="store2-input" placeholder="Artículo faltante" />
+            <button class="btn btn-primary" onclick="addItem('store2')">Agregar</button>
+          </div>
+          <ul id="store2-list"></ul>
         </div>
-        <ul id="store3-list"></ul>
-      </div>
 
-      <div class="store" id="store4">
-        <h2>Market</h2>
-        <div class="item-input">
-          <input type="text" id="store4-input" placeholder="Artículo faltante" />
-          <button class="btn btn-primary" onclick="addItem('store4')">Agregar</button>
+        <div class="store" id="store3">
+          <h2>Parque</h2>
+          <div class="item-input">
+            <input type="text" id="store3-input" placeholder="Artículo faltante" />
+            <button class="btn btn-primary" onclick="addItem('store3')">Agregar</button>
+          </div>
+          <ul id="store3-list"></ul>
         </div>
-        <ul id="store4-list"></ul>
-      </div>
 
-      <div class="store" id="store5">
-        <h2>Multi</h2>
-        <div class="item-input">
-          <input type="text" id="store5-input" placeholder="Artículo faltante" />
-          <button class="btn btn-primary" onclick="addItem('store5')">Agregar</button>
+        <div class="store" id="store4">
+          <h2>Market</h2>
+          <div class="item-input">
+            <input type="text" id="store4-input" placeholder="Artículo faltante" />
+            <button class="btn btn-primary" onclick="addItem('store4')">Agregar</button>
+          </div>
+          <ul id="store4-list"></ul>
         </div>
-        <ul id="store5-list"></ul>
+
+        <div class="store" id="store5">
+          <h2>Multi</h2>
+          <div class="item-input">
+            <input type="text" id="store5-input" placeholder="Artículo faltante" />
+            <button class="btn btn-primary" onclick="addItem('store5')">Agregar</button>
+          </div>
+          <ul id="store5-list"></ul>
+        </div>
       </div>
     </div>
   </section>
 
   <script>
-    // --- Firebase (SIN seguridad / sin Auth) ---
+    // --- Firebase (SIN Auth; sincroniza entre dispositivos) ---
     const firebaseConfig = {
       apiKey: "AIzaSyDeBrwv8M3cm5KPvH61KQgdG6-I-PqQmoU",
       authDomain: "faltanteslocales.firebaseapp.com",
@@ -131,22 +136,24 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Estado simple
+    // Estado
     let currentUser = '';
     let isAdmin = false;
     let allowedStores = [];
 
+    const DISPLAY_NAMES = { admin:'Admin', aguila:'Aguila', '66':'66', parque:'Parque', market:'Market', multi:'Multi' };
     const storeMap = { aguila:['store1'], '66':['store2'], parque:['store3'], market:['store4'], multi:['store5'] };
-    const displayMap = { admin:'Administrador', aguila:'Águila', '66':'66', parque:'Parque', market:'Market', multi:'Multi' };
     const storeLabels = { store1:'Águila', store2:'66', store3:'Parque', store4:'Market', store5:'Multi' };
 
-    // Utilidades
-    const $ = (s) => document.querySelector(s);
-    function show(idSel){ $(idSel).classList.remove('hidden'); }
-    function hide(idSel){ $(idSel).classList.add('hidden'); }
+    // Helpers
+    const $ = s => document.querySelector(s);
+    const userTag = $('#userTag');
+    function setUserBadge(key){ userTag.textContent = 'Usuario: ' + (DISPLAY_NAMES[key] || key); }
+    function show(sel){ $(sel).classList.remove('hidden'); }
+    function hide(sel){ $(sel).classList.add('hidden'); }
 
-    // Listeners DB por tienda
-    const listeners = {}; // { storeId: [{ref, ev, fn}, ...] }
+    // Listeners por tienda
+    const listeners = {}; // { storeId: [{ref,ev,fn}] }
     function detachAll(){
       Object.values(listeners).forEach(arr => arr.forEach(({ref,ev,fn}) => ref.off(ev, fn)));
       Object.keys(listeners).forEach(k => delete listeners[k]);
@@ -155,7 +162,10 @@
     function initListeners(){
       detachAll();
       // Limpia listas visibles
-      Object.keys(storeLabels).forEach(id => { const ul = document.getElementById(id+'-list'); if (ul) ul.innerHTML=''; });
+      Object.keys(storeLabels).forEach(id => {
+        const ul = document.getElementById(id+'-list');
+        if (ul) ul.innerHTML='';
+      });
 
       allowedStores.forEach(storeId => {
         const ref = db.ref('stores/'+storeId+'/items');
@@ -165,7 +175,7 @@
         listeners[storeId].push({ref,ev:'child_added',fn:onAdd},{ref,ev:'child_removed',fn:onRem});
       });
 
-      // Enter para inputs
+      // Tecla Enter para inputs
       Object.keys(storeLabels).forEach(storeId => {
         const inp = document.getElementById(storeId+'-input');
         if (!inp) return;
@@ -179,10 +189,10 @@
       const inp = document.getElementById(storeId+'-input');
       const text = (inp?.value||'').trim();
       if (!text) return;
-      const item = { text, createdBy: displayMap[currentUser] || currentUser, ts: Date.now() };
+      const item = { text, createdBy: DISPLAY_NAMES[currentUser] || currentUser, ts: Date.now() };
       db.ref('stores/'+storeId+'/items').push(item);
       inp.value='';
-    }
+    };
 
     function addItemToList(storeId, id, item){
       const ul = document.getElementById(storeId+'-list'); if(!ul) return;
@@ -199,7 +209,7 @@
       const li = document.getElementById(`${storeId}-${id}`); if(li) li.remove();
     }
 
-    // Login simple (dropdown + contraseña solo admin)
+    // Login simple
     const userSel = document.getElementById('username');
     const passInp = document.getElementById('password');
     userSel.addEventListener('change', ()=>{ passInp.classList.toggle('hidden', userSel.value !== 'admin'); });
@@ -215,8 +225,7 @@
       } else { return alert('Usuario no autorizado'); }
 
       currentUser = u;
-      $('#who').textContent = displayMap[u];
-      $('#role').textContent = isAdmin ? 'Administrador' : 'Empleado';
+      setUserBadge(currentUser);
       hide('#login'); show('#app');
 
       // Mostrar solo tiendas permitidas
@@ -236,8 +245,12 @@
       detachAll();
       show('#login'); hide('#app');
       userSel.value=''; passInp.value=''; passInp.classList.add('hidden');
-      // Reset visibles para próximo login
-      Object.keys(storeLabels).forEach(id => { const el = document.getElementById(id); if(el) el.style.display='block'; const ul=document.getElementById(id+'-list'); if(ul) ul.innerHTML=''; });
+      setUserBadge('—');
+      // Reset visibles y listas
+      Object.keys(storeLabels).forEach(id => {
+        const el = document.getElementById(id); if(el) el.style.display='block';
+        const ul = document.getElementById(id+'-list'); if (ul) ul.innerHTML='';
+      });
     });
   </script>
 </body>
