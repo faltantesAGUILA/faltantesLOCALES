@@ -8,14 +8,15 @@
   <style>
     :root{
       --bg:#202124; --card:#2e2f31; --border:#3c3d3f; --text:#e8eaed; --muted:#9aa0a6;
-      --primary:#10a37f; --primary2:#4a90e2; --danger:#d93f3f; --warn:#f9ab00;
+      --primary:#10a37f; --primary2:#4a90e2; --danger:#d93f3f; --warn:#f9ab00; --overlay: rgba(0,0,0,.6);
+      --row:#26272b;
     }
     *{box-sizing:border-box}
     body{font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:20px;background:var(--bg);color:var(--text)}
     .main-title{font-size:2rem;text-align:center;margin:0 0 20px;background:linear-gradient(90deg,var(--primary2),var(--primary));-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:600}
     .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;box-shadow:0 8px 30px rgba(0,0,0,.35)}
     #login{max-width:360px;margin:40px auto}
-    input,button,select{padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text)}
+    input,button,select{padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:#e8eaed}
     input::placeholder{color:var(--muted)}
     input:focus,select:focus{outline:none;border-color:var(--primary2)}
     .btn{cursor:pointer;border:none;transition:transform .06s,filter .2s}
@@ -23,12 +24,16 @@
     .btn-primary{background:var(--primary);color:#101315}
     .btn-primary:hover{filter:brightness(1.05)}
     .btn-warn{background:var(--warn);color:#202124}
-    .btn-danger{background:var(--danger);color:#fff;border:none;padding:4px 8px}
+    .btn-danger{background:var(--danger);color:#fff}
+    .btn-ghost{background:transparent;border:1px solid var(--border);color:#e8eaed}
     .topbar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin-bottom:12px}
     .topbar .main-title{grid-column:2;justify-self:center;margin:0}
-    .container{max-width:1100px;margin:0 auto}
+    .container{max-width:1200px;margin:0 auto}
     .userbar{grid-column:3;justify-self:end;display:flex;gap:10px;align-items:center;white-space:nowrap}
     .muted{color:var(--muted);font-size:.95rem}
+    .tabs{display:flex;gap:8px;justify-content:center;margin:8px 0 16px;flex-wrap:wrap}
+    .tab-btn{padding:8px 12px;border-radius:999px;border:1px solid var(--border);background:#26272b;color:#e8eaed;cursor:pointer}
+    .tab-btn.active{border-color:var(--primary2)}
     .stores{display:flex;flex-direction:column;gap:16px;margin-top:16px}
     .store{border-radius:12px;border:1px solid var(--border);padding:16px;background:var(--card);transition:transform .15s}
     .store:hover{transform:translateY(-3px)}
@@ -38,13 +43,38 @@
     ul{margin:0;padding-left:18px}
     li{margin:6px 0}
     .hidden{display:none!important}
+    /* Tables */
+    table{width:100%;border-collapse:collapse}
+    thead th{position:sticky;top:0;background:#1f2023;z-index:1}
+    th, td{border-bottom:1px solid var(--border);padding:8px;text-align:center}
+    th:first-child, td:first-child{text-align:left}
+    tbody tr:nth-child(odd){background:var(--row)}
+    input[type=number]{width:100%;background:#26272b;border:1px solid var(--border);color:#e8eaed;padding:6px;border-radius:6px}
+    .actions{display:flex;gap:8px;justify-content:flex-end;margin:8px 0 0;flex-wrap:wrap}
+    /* Subsections */
+    .bev-grid{display:grid;gap:12px}
+    @media(min-width:900px){.bev-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    .bev-card{border:1px solid var(--border);border-radius:12px;padding:16px;background:var(--card)}
+    .feria-grid{display:grid;gap:12px}
+    @media(min-width:900px){.feria-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    .feria-card{border:1px solid var(--border);border-radius:12px;padding:16px;background:var(--card)}
+    /* Modals */
+    .modal{position:fixed;inset:0;background:var(--overlay);display:none;align-items:center;justify-content:center;padding:16px;z-index:1000}
+    .modal .dialog{background:var(--card);border:1px solid var(--border);border-radius:12px;max-width:1000px;width:100%;padding:16px}
+    .dialog h3{margin:0 0 8px}
+    .dialog .scroll{overflow:auto;max-height:80vh;border:1px solid var(--border);border-radius:8px}
+    .dialog table{min-width:720px}
+    .pill{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid var(--border);font-size:.85rem;color:#9aa0a6}
+    .note{font-size:.9rem;color:#9aa0a6}
+    tfoot td{font-weight:600}
+    /* Bigger Cigarros table */
+    #cigarrosSection table{font-size:0.95rem}
   </style>
-  <!-- Firebase SDK (solo App + Realtime DB) -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body>
-  <!-- LOGIN SIMPLE -->
+  <!-- LOGIN -->
   <section id="login" class="card">
     <h1 class="main-title">Faltantes de Locales</h1>
     <div style="display:grid;gap:10px">
@@ -59,6 +89,7 @@
       </select>
       <input type="password" id="password" placeholder="Contraseña" class="hidden" />
       <button id="login-btn" class="btn btn-primary">Entrar</button>
+      <small class="muted" id="loginError" style="display:none"></small>
     </div>
   </section>
 
@@ -73,57 +104,186 @@
         </div>
       </div>
 
-      <div id="stores" class="stores">
-        <div class="store" id="store1">
-          <h2>Águila</h2>
-          <div class="item-input">
-            <input type="text" id="store1-input" placeholder="Artículo faltante" />
-            <button class="btn btn-primary" onclick="addItem('store1')">Agregar</button>
-          </div>
-          <ul id="store1-list"></ul>
-        </div>
+      <div class="tabs">
+        <button id="tabFaltantes" class="tab-btn active">Faltantes</button>
+        <button id="tabBebidas" class="tab-btn">Stock Bebidas</button>
+        <button id="tabFeria" class="tab-btn">Pedido Feria</button>
+        <button id="tabCigarros" class="tab-btn">Pedido Cigarros</button>
+      </div>
 
-        <div class="store" id="store2">
-          <h2>66</h2>
-          <div class="item-input">
-            <input type="text" id="store2-input" placeholder="Artículo faltante" />
-            <button class="btn btn-primary" onclick="addItem('store2')">Agregar</button>
+      <!-- Faltantes -->
+      <div id="faltantesSection">
+        <div id="stores" class="stores">
+          <div class="store" id="store1">
+            <h2>Águila</h2>
+            <div class="item-input">
+              <input type="text" id="store1-input" placeholder="Artículo faltante" />
+              <button class="btn btn-primary" onclick="addItem('store1')">Agregar</button>
+            </div>
+            <ul id="store1-list"></ul>
           </div>
-          <ul id="store2-list"></ul>
-        </div>
 
-        <div class="store" id="store3">
-          <h2>Parque</h2>
-          <div class="item-input">
-            <input type="text" id="store3-input" placeholder="Artículo faltante" />
-            <button class="btn btn-primary" onclick="addItem('store3')">Agregar</button>
+          <div class="store" id="store2">
+            <h2>66</h2>
+            <div class="item-input">
+              <input type="text" id="store2-input" placeholder="Artículo faltante" />
+              <button class="btn btn-primary" onclick="addItem('store2')">Agregar</button>
+            </div>
+            <ul id="store2-list"></ul>
           </div>
-          <ul id="store3-list"></ul>
-        </div>
 
-        <div class="store" id="store4">
-          <h2>Market</h2>
-          <div class="item-input">
-            <input type="text" id="store4-input" placeholder="Artículo faltante" />
-            <button class="btn btn-primary" onclick="addItem('store4')">Agregar</button>
+          <div class="store" id="store3">
+            <h2>Parque</h2>
+            <div class="item-input">
+              <input type="text" id="store3-input" placeholder="Artículo faltante" />
+              <button class="btn btn-primary" onclick="addItem('store3')">Agregar</button>
+            </div>
+            <ul id="store3-list"></ul>
           </div>
-          <ul id="store4-list"></ul>
-        </div>
 
-        <div class="store" id="store5">
-          <h2>Multi</h2>
-          <div class="item-input">
-            <input type="text" id="store5-input" placeholder="Artículo faltante" />
-            <button class="btn btn-primary" onclick="addItem('store5')">Agregar</button>
+          <div class="store" id="store4">
+            <h2>Market</h2>
+            <div class="item-input">
+              <input type="text" id="store4-input" placeholder="Artículo faltante" />
+              <button class="btn btn-primary" onclick="addItem('store4')">Agregar</button>
+            </div>
+            <ul id="store4-list"></ul>
           </div>
-          <ul id="store5-list"></ul>
+
+          <div class="store" id="store5">
+            <h2>Multi</h2>
+            <div class="item-input">
+              <input type="text" id="store5-input" placeholder="Artículo faltante" />
+              <button class="btn btn-primary" onclick="addItem('store5')">Agregar</button>
+            </div>
+            <ul id="store5-list"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stock de Bebidas -->
+      <div id="bebidasSection" class="hidden">
+        <div id="bebidasGrid" class="bev-grid"></div>
+        <div class="actions">
+          <button id="pedidoBebidasBtn" class="btn btn-ghost hidden">Pedido bebidas</button>
+          <button id="pedidoBebidasCsv" class="btn btn-ghost hidden">Exportar CSV</button>
+        </div>
+      </div>
+
+      <!-- Pedido Feria -->
+      <div id="feriaSection" class="hidden">
+        <div id="feriaGrid" class="feria-grid"></div>
+        <div class="actions">
+          <button id="feriaUnificado" class="btn btn-ghost hidden">Pedido unificado</button>
+          <button id="feriaCsv" class="btn btn-ghost hidden">Exportar CSV</button>
+        </div>
+      </div>
+
+      <!-- Pedido Cigarros -->
+      <div id="cigarrosSection" class="card hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">
+          <h3 style="margin:0">Pedido Cigarros</h3>
+          <span class="note">Abajo: <b>TOTAL IMPORTE (UYU)</b> y <b>GANANCIA (UYU)</b>. (Precios por Admin)</span>
+        </div>
+        <table id="cigTable">
+          <thead id="cigThead"></thead>
+          <tbody id="cigTbody"></tbody>
+          <tfoot id="cigTfoot"></tfoot>
+        </table>
+        <div class="actions">
+          <button id="cigUniBtn" class="btn btn-ghost hidden">Pedido unificado</button>
+          <button id="cigCsvBtn" class="btn btn-ghost hidden">Exportar CSV</button>
+          <button id="cigCopyBtn" class="btn btn-ghost hidden">Copiar resumen</button>
+          <button id="cigClearBtn" class="btn btn-danger hidden">Limpiar todo</button>
+          <button id="cigPreciosBtn" class="btn btn-ghost hidden">Editar precios</button>
         </div>
       </div>
     </div>
   </section>
 
+  <!-- Modals -->
+  <div id="bebidasModal" class="modal">
+    <div class="dialog">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <h3 style="margin:0">Pedido Bebidas - Unificado</h3>
+        <span class="pill">Mínimo 2: 600 ml, 2.25 L; Coca 3 L</span>
+      </div>
+      <div class="scroll" style="margin-top:10px">
+        <table id="bebidasTable">
+          <thead id="bebidasThead"></thead>
+          <tbody id="bebidasTbody"></tbody>
+          <tfoot id="bebidasTfoot"></tfoot>
+        </table>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+        <button id="bebidasCopy" class="btn btn-ghost">Copiar resumen</button>
+        <button id="pedidoBebidasCsv2" class="btn btn-ghost">Exportar CSV</button>
+        <button id="bebidasClose" class="btn btn-warn">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="feriaModal" class="modal">
+    <div class="dialog">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <h3 style="margin:0">Pedido Feria - Unificado</h3>
+        <span class="pill">Suma cantidades por local</span>
+      </div>
+      <div class="scroll" style="margin-top:10px">
+        <table id="feriaTable">
+          <thead id="feriaThead"></thead>
+          <tbody id="feriaTbody"></tbody>
+          <tfoot id="feriaTfoot"></tfoot>
+        </table>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+        <button id="feriaCopy" class="btn btn-ghost">Copiar resumen</button>
+        <button id="feriaCsv2" class="btn btn-ghost">Exportar CSV</button>
+        <button id="feriaClose" class="btn btn-warn">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="cigPreciosModal" class="modal">
+    <div class="dialog">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <h3 style="margin:0">Precios de Cigarros</h3>
+        <span class="pill">Costo y Precio por producto</span>
+      </div>
+      <div class="scroll" style="margin-top:10px">
+        <table id="cigPrecioTable">
+          <thead><tr><th>Producto</th><th>Costo</th><th>Precio</th></tr></thead>
+          <tbody id="cigPrecioBody"></tbody>
+        </table>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+        <button id="cigPrecioSave" class="btn btn-primary">Guardar</button>
+        <button id="cigPrecioClose" class="btn btn-warn">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="cigUniModal" class="modal">
+    <div class="dialog">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <h3 style="margin:0">Pedido Cigarros - Unificado</h3>
+        <span class="pill">Solo totales por producto</span>
+      </div>
+      <div class="scroll" style="margin-top:10px">
+        <table id="cigUniTable">
+          <thead><tr><th>Producto</th><th>Total</th></tr></thead>
+          <tbody id="cigUniBody"></tbody>
+        </table>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+        <button id="cigUniCopy" class="btn btn-ghost">Copiar</button>
+        <button id="cigUniClose" class="btn btn-warn">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // --- Firebase (SIN Auth; sincroniza entre dispositivos) ---
+    // --- Firebase ---
     const firebaseConfig = {
       apiKey: "AIzaSyDeBrwv8M3cm5KPvH61KQgdG6-I-PqQmoU",
       authDomain: "faltanteslocales.firebaseapp.com",
@@ -145,45 +305,104 @@
     const storeMap = { aguila:['store1'], '66':['store2'], parque:['store3'], market:['store4'], multi:['store5'] };
     const storeLabels = { store1:'Águila', store2:'66', store3:'Parque', store4:'Market', store5:'Multi' };
 
-    // Helpers
-    const $ = s => document.querySelector(s);
-    const userTag = $('#userTag');
-    function setUserBadge(key){ userTag.textContent = 'Usuario: ' + (DISPLAY_NAMES[key] || key); }
-    function show(sel){ $(sel).classList.remove('hidden'); }
-    function hide(sel){ $(sel).classList.add('hidden'); }
-
-    // Listeners por tienda
-    const listeners = {}; // { storeId: [{ref,ev,fn}] }
-    function detachAll(){
-      Object.values(listeners).forEach(arr => arr.forEach(({ref,ev,fn}) => ref.off(ev, fn)));
-      Object.keys(listeners).forEach(k => delete listeners[k]);
+    // ===== Faltantes ↔ Feria =====
+    function stripAccents(s){
+      if (!s) return '';
+      return s.toLowerCase()
+        .replace(/á/g,'a').replace(/é/g,'e').replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u')
+        .replace(/ü/g,'u').replace(/ñ/g,'n');
+    }
+    const FERIA_PRODUCTS = [
+      { key:'sertal', label:'Sertal' },
+      { key:'dorixina', label:'Dorixina' },
+      { key:'gotita_comun', label:'Gotita común' },
+      { key:'gotita_gel', label:'Gotita gel' },
+      { key:'poxilina', label:'Poxilina' },
+      { key:'ecole', label:'Ecole' },
+      { key:'beldent_negro', label:'Beldent Negro' },
+      { key:'beldent_azul', label:'Beldent Azul' },
+      { key:'beldent_verde', label:'Beldent Verde' },
+      { key:'coronado_free', label:'Coronado Free' }
+    ];
+    const FERIA_MATCHERS = {
+      sertal: t => stripAccents(t).includes('sertal'),
+      dorixina: t => stripAccents(t).includes('dorixina'),
+      gotita_comun: t => { const x=stripAccents(t); return x.includes('gotita') && x.includes('comun') && !x.includes('gel'); },
+      gotita_gel: t => { const x=stripAccents(t); return x.includes('gotita') && x.includes('gel'); },
+      poxilina: t => stripAccents(t).includes('poxilina'),
+      ecole: t => stripAccents(t).includes('ecole'),
+      beldent_negro: t => { const x=stripAccents(t); return x.includes('beldent') && x.includes('negro'); },
+      beldent_azul: t => { const x=stripAccents(t); return x.includes('beldent') && x.includes('azul'); },
+      beldent_verde: t => { const x=stripAccents(t); return x.includes('beldent') && x.includes('verde'); },
+      coronado_free: t => { const x=stripAccents(t); return (x.includes('coronado') && x.includes('free')) || x.includes('coronado free'); }
+    };
+    function enforceFeriaMinForText(storeId, text){
+      const t = text || '';
+      Object.entries(FERIA_MATCHERS).forEach(([key, fn]) => {
+        if (fn(t)){
+          const ref = db.ref(`pedidoFeria/${storeId}/${key}`);
+          ref.transaction(current => {
+            const c = parseInt(current || 0, 10) || 0;
+            return c >= 2 ? c : 2;
+          });
+        }
+      });
+    }
+    async function reevaluateFeriaForStore(storeId){
+      const snap = await db.ref('stores/'+storeId+'/items').once('value');
+      const val = snap.val() || {};
+      const present = {};
+      Object.values(val).forEach(item => {
+        const t = item?.text || '';
+        Object.entries(FERIA_MATCHERS).forEach(([key, fn]) => { if (fn(t)) present[key] = true; });
+      });
+      const updates = {};
+      Object.keys(FERIA_MATCHERS).forEach(key => {
+        if (present[key]){
+          const ref = db.ref(`pedidoFeria/${storeId}/${key}`);
+          ref.transaction(current => {
+            const c = parseInt(current || 0, 10) || 0;
+            return c >= 2 ? c : 2;
+          });
+        } else {
+          updates[`pedidoFeria/${storeId}/${key}`] = 0;
+        }
+      });
+      if (Object.keys(updates).length) await db.ref().update(updates);
     }
 
-    function initListeners(){
-      detachAll();
-      // Limpia listas visibles
-      Object.keys(storeLabels).forEach(id => {
-        const ul = document.getElementById(id+'-list');
-        if (ul) ul.innerHTML='';
-      });
+    // ===== Faltantes UI =====
+    const listeners = {};     // Faltantes
+    const bevListeners = {};  // Bebidas
+    const feriaListeners = {}; // Feria
+    const cigListeners = {};   // Cigarros
 
+    function detachBucket(bucket){
+      Object.values(bucket).forEach(arr => arr.forEach(({ref,ev,fn}) => ref.off(ev, fn)));
+      Object.keys(bucket).forEach(k => delete bucket[k]);
+    }
+    function detachAll(){ [listeners, bevListeners, feriaListeners, cigListeners].forEach(detachBucket); }
+
+    function initFaltantesListeners(){
+      Object.keys(storeLabels).forEach(id => {
+        const ul = document.getElementById(id+'-list'); if (ul) ul.innerHTML='';
+      });
       allowedStores.forEach(storeId => {
         const ref = db.ref('stores/'+storeId+'/items');
         listeners[storeId] = listeners[storeId] || [];
-        const onAdd = ref.on('child_added', snap => addItemToList(storeId, snap.key, snap.val()));
-        const onRem = ref.on('child_removed', snap => removeItemFromList(storeId, snap.key));
+        const onAdd = ref.on('child_added', snap => {
+          const v = snap.val();
+          addItemToList(storeId, snap.key, v);
+          if (v?.text) enforceFeriaMinForText(storeId, v.text);
+        });
+        const onRem = ref.on('child_removed', snap => { removeItemFromList(storeId, snap.key); reevaluateFeriaForStore(storeId); });
         listeners[storeId].push({ref,ev:'child_added',fn:onAdd},{ref,ev:'child_removed',fn:onRem});
       });
-
-      // Tecla Enter para inputs
       Object.keys(storeLabels).forEach(storeId => {
         const inp = document.getElementById(storeId+'-input');
-        if (!inp) return;
-        inp.onkeydown = (e)=>{ if(e.key==='Enter') addItem(storeId); };
+        if (inp) inp.onkeydown = (e)=>{ if(e.key==='Enter') addItem(storeId); };
       });
     }
-
-    // Acciones
     window.addItem = function(storeId){
       if (!allowedStores.includes(storeId)) return;
       const inp = document.getElementById(storeId+'-input');
@@ -193,17 +412,12 @@
       db.ref('stores/'+storeId+'/items').push(item);
       inp.value='';
     };
-
     function addItemToList(storeId, id, item){
       const ul = document.getElementById(storeId+'-list'); if(!ul) return;
       const li = document.createElement('li'); li.id = `${storeId}-${id}`;
-      if (isAdmin) {
-      li.textContent = `${item.text} (por: ${item.createdBy || '—'})`;
-    } else {
-      li.textContent = item.text;
-    }
+      li.textContent = isAdmin ? `${item.text} (por: ${item.createdBy || '—'})` : item.text;
       if (isAdmin){
-        const btn = document.createElement('button'); btn.textContent='Eliminar'; btn.className='btn-danger'; btn.style.marginLeft='8px';
+        const btn = document.createElement('button'); btn.textContent='Eliminar'; btn.className='btn btn-danger'; btn.style.marginLeft='8px';
         btn.onclick = ()=>{ if(confirm('Eliminar este artículo?')) db.ref(`stores/${storeId}/items/${id}`).remove(); };
         li.appendChild(btn);
       }
@@ -213,48 +427,704 @@
       const li = document.getElementById(`${storeId}-${id}`); if(li) li.remove();
     }
 
-    // Login simple
+    // ===== Stock Bebidas =====
+    const SIZE_LABELS = { 250:'250 ml', 600:'600 ml', 2250:'2.25 L', 3000:'3 L' };
+    const DRINKS = [
+      { key:'coca', label:'Coca', sizes:[250,600,2250,3000] },
+      { key:'fanta', label:'Fanta', sizes:[250,600,2250] },
+      { key:'sprite', label:'Sprite', sizes:[250,600,2250] },
+      { key:'pomelo', label:'Pomelo', sizes:[250,600,2250] },
+      { key:'coca_zero', label:'Coca Zero', sizes:[250,600,2250] }
+    ];
+    function buildBebidasUI(){
+      const grid = document.getElementById('bebidasGrid');
+      grid.innerHTML = '';
+      allowedStores.forEach(storeId => {
+        const card = document.createElement('div');
+        card.className = 'bev-card';
+        const header = `<h3 style="margin-top:0">${storeLabels[storeId]}</h3>`;
+        const allSizesSorted = [250,600,2250,3000];
+        const headRow = `<tr><th>Bebida</th>${allSizesSorted.map(size => `<th>${SIZE_LABELS[size]}</th>`).join('')}</tr>`;
+        const bodyRows = DRINKS.map(d => {
+          const tds = allSizesSorted.map(size => {
+            if (d.sizes.includes(size)){
+              return `<td><input type="number" min="0" step="1" id="bev-${storeId}-${d.key}-${size}"></td>`;
+            } else {
+              return `<td style="opacity:.35">—</td>`;
+            }
+          }).join('');
+          return `<tr><td>${d.label}</td>${tds}</tr>`;
+        }).join('');
+        card.innerHTML = `${header}
+          <div style="overflow:auto">
+            <table>
+              <thead>${headRow}</thead>
+              <tbody>${bodyRows}</tbody>
+            </table>
+          </div>`;
+        grid.appendChild(card);
+      });
+      // Guardar cambios
+      allowedStores.forEach(storeId => {
+        DRINKS.forEach(d => d.sizes.forEach(size => {
+          const id = `bev-${storeId}-${d.key}-${size}`;
+          const el = document.getElementById(id);
+          if (!el) return;
+          el.addEventListener('change', ()=>{
+            const val = parseInt(el.value, 10);
+            const clean = isNaN(val) ? 0 : val;
+            db.ref(`stockBebidas/${storeId}/${d.key}/${size}`).set(clean);
+          });
+        }));
+      });
+      // Cargar
+      allowedStores.forEach(storeId => {
+        const ref = db.ref(`stockBebidas/${storeId}`);
+        bevListeners[storeId] = bevListeners[storeId] || [];
+        const onVal = ref.on('value', snap => {
+          const data = snap.val() || {};
+          DRINKS.forEach(d => d.sizes.forEach(size => {
+            const el = document.getElementById(`bev-${storeId}-${d.key}-${size}`);
+            if (!el) return;
+            const v = data?.[d.key]?.[size] ?? '';
+            el.value = v === 0 ? '' : v;
+          }));
+        });
+        bevListeners[storeId].push({ref,ev:'value',fn:onVal});
+      });
+      // Botones admin
+      document.getElementById('pedidoBebidasBtn').classList.toggle('hidden', !isAdmin);
+      document.getElementById('pedidoBebidasCsv').classList.toggle('hidden', !isAdmin);
+    }
+    async function generarPedidoBebidas(){
+      const storeIds = Object.keys(storeLabels);
+      const snaps = await Promise.all(storeIds.map(sid => db.ref('stockBebidas/'+sid).once('value')));
+      const headers = ['Bebida','Tamaño', ...storeIds.map(sid => storeLabels[sid]), 'Total a pedir'];
+      const thead = document.getElementById('bebidasThead');
+      const tbody = document.getElementById('bebidasTbody');
+      const tfoot = document.getElementById('bebidasTfoot');
+      thead.innerHTML = tbody.innerHTML = tfoot.innerHTML = '';
+
+      const headTr = document.createElement('tr');
+      headers.forEach(h => { const th=document.createElement('th'); th.textContent=h; headTr.appendChild(th); });
+      thead.appendChild(headTr);
+
+      const csvRows = [headers];
+      const resumen = [];
+      function pedirCalc(drinkKey, size, stockVal){
+        const isTarget = size===600 || size===2250 || (drinkKey==='coca' && size===3000);
+        return isTarget ? Math.max(0, 2 - (parseInt(stockVal,10)||0)) : 0;
+      }
+      DRINKS.forEach(d => {
+        [600,2250,3000].forEach(size => {
+          if (size===3000 && d.key!=='coca') return;
+          const rowCells = [d.label, (size===3000?'3 L': (size===2250?'2.25 L': size+' ml'))];
+          let rowTotal = 0;
+          storeIds.forEach((sid, idx) => {
+            const data = snaps[idx].val() || {};
+            const stock = data?.[d.key]?.[size] ?? 0;
+            const pedir = pedirCalc(d.key, size, stock);
+            rowTotal += pedir;
+            rowCells.push(pedir);
+          });
+          if (rowTotal === 0) return;
+          rowCells.push(rowTotal);
+          const tr = document.createElement('tr');
+          rowCells.forEach(v => { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); });
+          tbody.appendChild(tr);
+          csvRows.push(rowCells);
+          resumen.push(`${d.label} ${rowCells[1]}: ${rowTotal}`);
+        });
+      });
+      const totalGeneral = Array.from(tbody.querySelectorAll('tr')).reduce((sum, tr) => sum + (parseInt(tr.lastChild.textContent||'0',10)||0), 0);
+      const trf = document.createElement('tr');
+      const tdf = document.createElement('td'); tdf.colSpan = 2 + storeIds.length; tdf.textContent = 'TOTAL GENERAL';
+      const tdf2 = document.createElement('td'); tdf2.textContent = totalGeneral;
+      trf.appendChild(tdf); trf.appendChild(tdf2); tfoot.appendChild(trf);
+      document.getElementById('bebidasModal').style.display = 'flex';
+      function downloadCsv(){
+        const csv = csvRows.map(r => r.join(',')).join('\n');
+        const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'pedido_bebidas.csv'; a.click();
+        URL.revokeObjectURL(url);
+      }
+      document.getElementById('pedidoBebidasCsv').onclick = downloadCsv;
+      document.getElementById('pedidoBebidasCsv2').onclick = downloadCsv;
+      document.getElementById('bebidasCopy').onclick = async ()=>{
+        try{ await navigator.clipboard.writeText(resumen.join('\n') + `\nTOTAL GENERAL: ${totalGeneral}`); alert('Copiado'); }catch{ alert('No se pudo copiar'); }
+      };
+    }
+    document.getElementById('pedidoBebidasBtn').addEventListener('click', generarPedidoBebidas);
+    document.getElementById('bebidasClose').addEventListener('click', ()=> document.getElementById('bebidasModal').style.display='none');
+
+    // ===== Pedido Feria =====
+    function buildFeriaUI(){
+      const grid = document.getElementById('feriaGrid');
+      grid.innerHTML = '';
+      document.getElementById('feriaUnificado').classList.toggle('hidden', !isAdmin);
+      document.getElementById('feriaCsv').classList.toggle('hidden', !isAdmin);
+      allowedStores.forEach(storeId => {
+        const card = document.createElement('div');
+        card.className = 'feria-card';
+        const rows = FERIA_PRODUCTS.map(p => `
+          <tr>
+            <td>${p.label}</td>
+            <td><input type="number" min="0" step="1" id="fer-${storeId}-${p.key}"></td>
+          </tr>`).join('');
+        card.innerHTML = `
+          <h3 style="margin-top:0">${storeLabels[storeId]}</h3>
+          <div style="overflow:auto">
+            <table>
+              <thead><tr><th>Producto</th><th>Cantidad</th></tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>`;
+        grid.appendChild(card);
+      });
+      // Guardar
+      allowedStores.forEach(storeId => {
+        FERIA_PRODUCTS.forEach(p => {
+          const id = `fer-${storeId}-${p.key}`;
+          const el = document.getElementById(id);
+          if (!el) return;
+          el.addEventListener('change', ()=>{
+            const val = parseInt(el.value, 10);
+            const clean = isNaN(val) ? 0 : val;
+            db.ref(`pedidoFeria/${storeId}/${p.key}`).set(clean);
+          });
+        });
+      });
+      // Live
+      allowedStores.forEach(storeId => {
+        const ref = db.ref(`pedidoFeria/${storeId}`);
+        feriaListeners[storeId] = feriaListeners[storeId] || [];
+        const onVal = ref.on('value', snap => {
+          const data = snap.val() || {};
+          FERIA_PRODUCTS.forEach(p => {
+            const el = document.getElementById(`fer-${storeId}-${p.key}`);
+            if (!el) return;
+            const v = data?.[p.key] ?? '';
+            el.value = v === 0 ? '' : v;
+          });
+        });
+        feriaListeners[storeId].push({ref,ev:'value',fn:onVal});
+      });
+    }
+    async function generarPedidoFeriaTabla(){
+      const storeIds = Object.keys(storeLabels);
+      const snaps = await Promise.all(storeIds.map(sid => db.ref('pedidoFeria/'+sid).once('value')));
+      const headers = ['Producto', ...storeIds.map(sid => storeLabels[sid]), 'Total'];
+      const thead = document.getElementById('feriaThead');
+      const tbody = document.getElementById('feriaTbody');
+      const tfoot = document.getElementById('feriaTfoot');
+      thead.innerHTML = tbody.innerHTML = tfoot.innerHTML = '';
+
+      const headTr = document.createElement('tr');
+      headers.forEach(h => { const th=document.createElement('th'); th.textContent=h; headTr.appendChild(th); });
+      thead.appendChild(headTr);
+
+      const csvRows = [headers];
+      const resumen = [];
+
+      FERIA_PRODUCTS.forEach(p => {
+        const rowCells = [p.label];
+        let rowTotal = 0;
+        storeIds.forEach((sid, idx) => {
+          const data = snaps[idx].val() || {};
+          const qty = parseInt(data?.[p.key] || 0, 10) || 0;
+          rowTotal += qty;
+          rowCells.push(qty);
+        });
+        if (rowTotal === 0) return;
+        rowCells.push(rowTotal);
+        const tr = document.createElement('tr');
+        rowCells.forEach(v => { const td=document.createElement('td'); td.textContent=v; tr.appendChild(td); });
+        tbody.appendChild(tr);
+        csvRows.push(rowCells);
+        resumen.push(`${p.label}: ${rowTotal}`);
+      });
+
+      const totalGeneral = Array.from(tbody.querySelectorAll('tr')).reduce((sum, tr) => sum + (parseInt(tr.lastChild.textContent||'0',10)||0), 0);
+      const trf = document.createElement('tr');
+      const tdf = document.createElement('td'); tdf.colSpan = 1 + storeIds.length; tdf.textContent = 'TOTAL GENERAL';
+      const tdf2 = document.createElement('td'); tdf2.textContent = totalGeneral;
+      trf.appendChild(tdf); trf.appendChild(tdf2); tfoot.appendChild(trf);
+
+      document.getElementById('feriaModal').style.display = 'flex';
+
+      function downloadCsv(){
+        const csv = csvRows.map(r => r.join(',')).join('\n');
+        const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'pedido_feria.csv'; a.click();
+        URL.revokeObjectURL(url);
+      }
+      document.getElementById('feriaCsv').onclick = downloadCsv;
+      document.getElementById('feriaCsv2').onclick = downloadCsv;
+      document.getElementById('feriaCopy').onclick = async ()=>{
+        try{ await navigator.clipboard.writeText(resumen.join('\n') + `\nTOTAL GENERAL: ${totalGeneral}`); alert('Copiado'); }catch{ alert('No se pudo copiar'); }
+      };
+    }
+    document.getElementById('feriaUnificado').addEventListener('click', generarPedidoFeriaTabla);
+    document.getElementById('feriaClose').addEventListener('click', ()=> document.getElementById('feriaModal').style.display='none');
+
+    // ===== Pedido Cigarros =====
+    const CIG_PRODUCTS = [
+      // 20
+      { key:'pacifico_20', label:'Pacifico 20' },
+      { key:'bm_20', label:'BM 20' },
+      { key:'inamora_20', label:'Inamora 20' },
+      { key:'dual_20', label:'Dual 20' },
+      { key:'niagara_20', label:'Niagara 20' },
+      { key:'vista_20', label:'Vista 20' },
+      { key:'alaska_20', label:'Alaska 20' },
+      { key:'coro_20', label:'Coro 20' },
+      { key:'nevada_20', label:'Nevada 20' },
+      { key:'ocean_20', label:'Ocean 20' },
+      { key:'calif_20', label:'Calif 20' },
+      { key:'madison_20', label:'Madison 20' },
+      { key:'malboro_20', label:'Malboro 20' },
+      { key:'fiesta_20', label:'Fiesta 20' },
+      // Sueltos
+      { key:'cerrito', label:'Cerrito' },
+      { key:'peruano', label:'Peruano' },
+      // 14
+      { key:'coro_14', label:'Coro 14' },
+      { key:'nevada_14', label:'Nevada 14' },
+      // 10
+      { key:'coro_10', label:'Coro 10' },
+      { key:'nevada_10', label:'Nevada 10' },
+      { key:'ocean_10', label:'Ocean 10' },
+      { key:'calif_10', label:'Calif 10' },
+      { key:'fiesta_10', label:'Fiesta 10' },
+      { key:'malboro_10', label:'Malboro 10' },
+      { key:'pacifico_10', label:'Pacifico 10' },
+      { key:'bm_10', label:'BM 10' },
+      { key:'inamora_10', label:'Inamora 10' },
+      { key:'dual_10', label:'Dual 10' },
+      { key:'vista_10', label:'Vista 10' },
+      { key:'niagara_10', label:'Niagara 10' },
+      { key:'alaska_10', label:'Alaska 10' }
+    ];
+    let cigPrices = {};  // { key: { costo, precio } }
+    let cigData = {};    // { storeId: { key: qty } }
+    let cigInputGrid = []; // navegación por flechas
+    let cigStoreIds = [];
+
+    // Precios (venta/costo) con ajustes
+    const CIG_PRICE_UPSERT = {
+      // 20 a 2400/2064
+      pacifico_20:{costo:2064, precio:2400},
+      bm_20:{costo:2064, precio:2400},
+      inamora_20:{costo:2064, precio:2400},
+      dual_20:{costo:2064, precio:2400},
+      vista_20:{costo:2064, precio:2400},
+      niagara_20:{costo:2064, precio:2400},
+      alaska_20:{costo:2064, precio:2400},
+      // 20 a 2300/1942
+      coro_20:{costo:1942, precio:2300},
+      nevada_20:{costo:1942, precio:2300},
+      ocean_20:{costo:1942, precio:2300},
+      calif_20:{costo:1942, precio:2300},
+      madison_20:{costo:1942, precio:2300},
+      // Malboro 20 a 2300/2064
+      malboro_20:{costo:2064, precio:2300},
+      // Sueltos: venta 1600, costo 1349
+      cerrito:{costo:1349, precio:1600},
+      peruano:{costo:1349, precio:1600},
+      // 14: venta 1750, costo 1475
+      coro_14:{costo:1475, precio:1750},
+      nevada_14:{costo:1475, precio:1750},
+      // 10: venta 1250 (ajuste), costos quedan como estaban
+      coro_10:{costo:1019, precio:1250},
+      nevada_10:{costo:1019, precio:1250},
+      ocean_10:{costo:1019, precio:1250},
+      calif_10:{costo:1019, precio:1250},
+      fiesta_10:{costo:1019, precio:1250},
+      malboro_10:{costo:1074, precio:1250},
+      // 10 a 1400/1074 (resto)
+      pacifico_10:{costo:1074, precio:1400},
+      bm_10:{costo:1074, precio:1400},
+      inamora_10:{costo:1074, precio:1400},
+      dual_10:{costo:1074, precio:1400},
+      vista_10:{costo:1074, precio:1400},
+      alaska_10:{costo:1074, precio:1400},
+      niagara_10:{costo:1074, precio:1400}
+    };
+
+    function buildCigarrosUI(){
+      // Si no es admin, bloquear completamente esta vista
+      if (!isAdmin){
+        document.getElementById('tabCigarros').style.display = 'none';
+        document.getElementById('cigarrosSection').classList.add('hidden');
+        return;
+      } else {
+        document.getElementById('tabCigarros').style.display = '';
+      }
+
+      // Admin actions visibles
+      document.getElementById('cigPreciosBtn').classList.remove('hidden');
+      document.getElementById('cigCsvBtn').classList.remove('hidden');
+      document.getElementById('cigCopyBtn').classList.remove('hidden');
+      document.getElementById('cigUniBtn').classList.remove('hidden');
+      document.getElementById('cigClearBtn').classList.remove('hidden');
+
+      const thead = document.getElementById('cigThead');
+      const tbody = document.getElementById('cigTbody');
+      const tfoot = document.getElementById('cigTfoot');
+      thead.innerHTML = tbody.innerHTML = tfoot.innerHTML = '';
+
+      cigStoreIds = Object.keys(storeLabels);
+      const head = document.createElement('tr');
+      ['Producto', ...cigStoreIds.map(sid=>storeLabels[sid]), 'Total'].forEach(h=>{
+        const th = document.createElement('th'); th.textContent=h; head.appendChild(th);
+      });
+      thead.appendChild(head);
+
+      // Body rows: construir matriz de inputs para navegación
+      cigInputGrid = [];
+      CIG_PRODUCTS.forEach((prod, rowIdx) => {
+        const tr = document.createElement('tr'); tr.dataset.key = prod.key;
+        const first = document.createElement('td'); first.textContent = prod.label; tr.appendChild(first);
+        const rowInputs = [];
+        cigStoreIds.forEach((sid, colIdx) => {
+          const td = document.createElement('td');
+          const inp = document.createElement('input');
+          inp.type='number'; inp.min='0'; inp.step='1'; // sin placeholder (0 invisible)
+          inp.id=`cig-${sid}-${prod.key}`;
+          inp.dataset.row = rowIdx;
+          inp.dataset.col = colIdx;
+          inp.addEventListener('keydown', (e)=> handleCigArrows(e, inp));
+          inp.addEventListener('change', ()=>{
+            const v = parseInt(inp.value,10); const clean=isNaN(v)?0:v;
+            db.ref(`pedidoCigarros/${sid}/${prod.key}`).set(clean);
+          });
+          td.appendChild(inp); tr.appendChild(td);
+          rowInputs.push(inp);
+        });
+        const totalTd = document.createElement('td'); totalTd.id = `cig-total-${prod.key}`; totalTd.textContent='0'; tr.appendChild(totalTd);
+        tbody.appendChild(tr);
+        cigInputGrid.push(rowInputs);
+      });
+
+      // Footer: IMPORTE y GANANCIA por local
+      const importeRow = document.createElement('tr');
+      importeRow.innerHTML = `<td>TOTAL IMPORTE (UYU)</td>${cigStoreIds.map(sid=>`<td id="cig-importe-${sid}">—</td>`).join('')}<td id="cig-importe-general">—</td>`;
+      tfoot.appendChild(importeRow);
+      const profitRow = document.createElement('tr');
+      profitRow.innerHTML = `<td>GANANCIA (UYU)</td>${cigStoreIds.map(sid=>`<td id="cig-ganancia-${sid}">—</td>`).join('')}<td id="cig-ganancia-general">—</td>`;
+      tfoot.appendChild(profitRow);
+
+      // Data listeners
+      const priceRef = db.ref('cigarrosPrecios');
+      const priceFn = priceRef.on('value', snap => { cigPrices = snap.val() || {}; recalcCigarros(); });
+      cigListeners['_prices'] = [{ref:priceRef, ev:'value', fn:priceFn}];
+
+      cigStoreIds.forEach(sid => {
+        const ref = db.ref(`pedidoCigarros/${sid}`);
+        const fn = ref.on('value', snap => {
+          cigData[sid] = snap.val() || {};
+          CIG_PRODUCTS.forEach((p, r) => {
+            const el = document.getElementById(`cig-${sid}-${p.key}`);
+            if (el){
+              const v = cigData[sid]?.[p.key] ?? '';
+              el.value = v === 0 ? '' : v;
+            }
+          });
+          recalcCigarros();
+        });
+        cigListeners[sid] = cigListeners[sid] || [];
+        cigListeners[sid].push({ref, ev:'value', fn});
+      });
+
+      // Botones
+      document.getElementById('cigCsvBtn').onclick = exportCigCsv;
+      document.getElementById('cigCopyBtn').onclick = copyCigResumen;
+      document.getElementById('cigPreciosBtn').onclick = openCigPrecios;
+      document.getElementById('cigUniBtn').onclick = openCigUnificado;
+      document.getElementById('cigClearBtn').onclick = clearCigAll;
+    }
+
+    function handleCigArrows(e, el){
+      const r = parseInt(el.dataset.row,10);
+      const c = parseInt(el.dataset.col,10);
+      if (Number.isNaN(r) || Number.isNaN(c)) return;
+
+      let target = null;
+      if (e.key === 'ArrowRight'){ target = cigInputGrid[r]?.[c+1] || null; }
+      else if (e.key === 'ArrowLeft'){ target = cigInputGrid[r]?.[c-1] || null; }
+      else if (e.key === 'ArrowDown'){ target = cigInputGrid[r+1]?.[c] || null; }
+      else if (e.key === 'ArrowUp'){ target = cigInputGrid[r-1]?.[c] || null; }
+
+      if (target){
+        e.preventDefault();
+        target.focus();
+        target.select();
+      }
+    }
+
+    function recalcCigarros(){
+      const storeIds = cigStoreIds.length ? cigStoreIds : Object.keys(storeLabels);
+      let importeGeneral = 0;
+      let gananciaGeneral = 0;
+
+      // Totales por producto
+      CIG_PRODUCTS.forEach(p => {
+        let rowTotal = 0;
+        storeIds.forEach(sid => {
+          const qty = parseInt(cigData?.[sid]?.[p.key] || 0, 10) || 0;
+          rowTotal += qty;
+        });
+        const td = document.getElementById(`cig-total-${p.key}`); if (td) td.textContent = rowTotal;
+      });
+
+      // Totales por columna: importe y ganancia
+      storeIds.forEach(sid => {
+        let importe = 0;
+        let ganancia = 0;
+        CIG_PRODUCTS.forEach(p => {
+          const qty = parseInt(cigData?.[sid]?.[p.key] || 0, 10) || 0;
+          const prec = cigPrices?.[p.key] || {};
+          const costo = parseFloat(prec.costo || 0) || 0;
+          const precio = parseFloat(prec.precio || 0) || 0;
+          importe += precio * qty;
+          ganancia += Math.max(0, (precio - costo)) * qty;
+        });
+        importeGeneral += importe; gananciaGeneral += ganancia;
+        const impTd = document.getElementById(`cig-importe-${sid}`); if (impTd) impTd.textContent = importe > 0 ? importe.toFixed(2) : '—';
+        const ganTd = document.getElementById(`cig-ganancia-${sid}`); if (ganTd) ganTd.textContent = ganancia > 0 ? ganancia.toFixed(2) : '—';
+      });
+      const impG = document.getElementById('cig-importe-general'); if (impG) impG.textContent = importeGeneral > 0 ? importeGeneral.toFixed(2) : '—';
+      const ganG = document.getElementById('cig-ganancia-general'); if (ganG) ganG.textContent = gananciaGeneral > 0 ? gananciaGeneral.toFixed(2) : '—';
+    }
+
+    function exportCigCsv(){
+      const storeIds = cigStoreIds.length ? cigStoreIds : Object.keys(storeLabels);
+      const headers = ['Producto', ...storeIds.map(sid => storeLabels[sid]), 'Total'];
+      const rows = [headers];
+      CIG_PRODUCTS.forEach(p => {
+        const line = [p.label];
+        let rowTotal = 0;
+        storeIds.forEach(sid => {
+          const qty = parseInt(cigData?.[sid]?.[p.key] || 0, 10) || 0;
+          rowTotal += qty;
+          line.push(qty);
+        });
+        line.push(rowTotal);
+        rows.push(line);
+      });
+      // Footer: importe y ganancia
+      const importeRow = ['TOTAL IMPORTE (UYU)'];
+      const gananciaRow = ['GANANCIA (UYU)'];
+      let impG=0, ganG=0;
+      storeIds.forEach(sid => {
+        let imp=0, gan=0;
+        CIG_PRODUCTS.forEach(p => {
+          const qty = parseInt(cigData?.[sid]?.[p.key] || 0, 10) || 0;
+          const prec = cigPrices?.[p.key] || {};
+          const costo = parseFloat(prec.costo || 0) || 0;
+          const precio = parseFloat(prec.precio || 0) || 0;
+          imp += precio*qty;
+          gan += Math.max(0, precio-costo)*qty;
+        });
+        importeRow.push(imp.toFixed(2)); impG += imp;
+        gananciaRow.push(gan.toFixed(2)); ganG += gan;
+      });
+      importeRow.push(impG.toFixed(2)); gananciaRow.push(ganG.toFixed(2));
+      rows.push(importeRow); rows.push(gananciaRow);
+      const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'pedido_cigarros.csv'; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function copyCigResumen(){
+      const storeIds = cigStoreIds.length ? cigStoreIds : Object.keys(storeLabels);
+      const lines = [];
+      const imp = {}; const gan = {};
+      storeIds.forEach(sid => { imp[sid]=0; gan[sid]=0; });
+      CIG_PRODUCTS.forEach(p => {
+        const tot = storeIds.reduce((sum, sid)=> sum + (parseInt(cigData?.[sid]?.[p.key] || 0,10)||0), 0);
+        if (tot>0) lines.push(`${p.label}: ${tot}`);
+      });
+      storeIds.forEach(sid => {
+        CIG_PRODUCTS.forEach(p => {
+          const qty = parseInt(cigData?.[sid]?.[p.key] || 0, 10) || 0;
+          const prec = cigPrices?.[p.key] || {};
+          const costo = parseFloat(prec.costo || 0) || 0;
+          const precio = parseFloat(prec.precio || 0) || 0;
+          imp[sid] += precio*qty;
+          gan[sid] += Math.max(0, precio-costo)*qty;
+        });
+      });
+      const impG = Object.values(imp).reduce((a,b)=>a+b,0);
+      const ganG = Object.values(gan).reduce((a,b)=>a+b,0);
+      lines.push('---');
+      lines.push('TOTAL IMPORTE (UYU) por local:');
+      storeIds.forEach(sid => lines.push(`${storeLabels[sid]}: ${imp[sid].toFixed(2)}`));
+      lines.push(`GENERAL: ${impG.toFixed(2)}`);
+      lines.push('GANANCIA (UYU) por local:');
+      storeIds.forEach(sid => lines.push(`${storeLabels[sid]}: ${gan[sid].toFixed(2)}`));
+      lines.push(`GENERAL: ${ganG.toFixed(2)}`);
+      navigator.clipboard.writeText(lines.join('\n')).then(()=> alert('Copiado al portapapeles')).catch(()=> alert('No se pudo copiar'));
+    }
+
+    // Limpiar todo (Admin)
+    async function clearCigAll(){
+      if (!isAdmin) return;
+      if (!confirm('¿Seguro querés poner todo en 0 para todos los locales?')) return;
+      const updates = {};
+      Object.keys(storeLabels).forEach(sid => {
+        CIG_PRODUCTS.forEach(p => { updates[`pedidoCigarros/${sid}/${p.key}`] = 0; });
+      });
+      await db.ref().update(updates);
+      alert('Pedido de cigarros limpiado.');
+    }
+
+    // Modal de precios
+    function openCigPrecios(){
+      const body = document.getElementById('cigPrecioBody');
+      body.innerHTML='';
+      CIG_PRODUCTS.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${p.label}</td>
+          <td><input type="number" step="0.01" min="0" id="cig-costo-${p.key}" placeholder="0.00" value="${(cigPrices?.[p.key]?.costo ?? '')}"></td>
+          <td><input type="number" step="0.01" min="0" id="cig-precio-${p.key}" placeholder="0.00" value="${(cigPrices?.[p.key]?.precio ?? '')}"></td>
+        `;
+        body.appendChild(tr);
+      });
+      document.getElementById('cigPreciosModal').style.display='flex';
+    }
+    document.getElementById('cigPrecioClose').onclick = ()=> document.getElementById('cigPreciosModal').style.display='none';
+    document.getElementById('cigPrecioSave').onclick = async ()=>{
+      const updates = {};
+      CIG_PRODUCTS.forEach(p => {
+        const costo = parseFloat(document.getElementById(`cig-costo-${p.key}`).value || '0') || 0;
+        const precio = parseFloat(document.getElementById(`cig-precio-${p.key}`).value || '0') || 0;
+        updates[p.key] = { costo, precio };
+      });
+      await db.ref('cigarrosPrecios').update(updates);
+      document.getElementById('cigPreciosModal').style.display='none';
+    };
+
+    // Unificado Cigarros (solo totales)
+    function openCigUnificado(){
+      const storeIds = cigStoreIds.length ? cigStoreIds : Object.keys(storeLabels);
+      const tbody = document.getElementById('cigUniBody');
+      tbody.innerHTML='';
+      const lines = [];
+      CIG_PRODUCTS.forEach(p => {
+        const total = storeIds.reduce((sum,sid)=> sum + (parseInt(cigData?.[sid]?.[p.key] || 0,10)||0), 0);
+        if (total>0){
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${p.label}</td><td>${total}</td>`;
+          tbody.appendChild(tr);
+          lines.push(`${p.label}: ${total}`);
+        }
+      });
+      document.getElementById('cigUniModal').style.display = 'flex';
+      document.getElementById('cigUniCopy').onclick = async ()=>{
+        try{ await navigator.clipboard.writeText(lines.join('\n')); alert('Copiado'); }catch{ alert('No se pudo copiar'); }
+      };
+    }
+    document.getElementById('cigUniClose').onclick = ()=> document.getElementById('cigUniModal').style.display='none';
+
+    // ===== Tabs =====
+    function activateTab(id){
+      ['#tabFaltantes','#tabBebidas','#tabFeria','#tabCigarros'].forEach(t=>{ const x=document.querySelector(t); if(x) x.classList.remove('active'); });
+      ['#faltantesSection','#bebidasSection','#feriaSection','#cigarrosSection'].forEach(s=> document.querySelector(s).classList.add('hidden'));
+
+      if (id==='cigarros' && !isAdmin){
+        // Bloquear acceso si no es admin
+        id = 'faltantes';
+      }
+      if (id==='faltantes'){ document.querySelector('#tabFaltantes').classList.add('active'); document.querySelector('#faltantesSection').classList.remove('hidden'); }
+      if (id==='bebidas'){ document.querySelector('#tabBebidas').classList.add('active'); document.querySelector('#bebidasSection').classList.remove('hidden'); }
+      if (id==='feria'){ document.querySelector('#tabFeria').classList.add('active'); document.querySelector('#feriaSection').classList.remove('hidden'); }
+      if (id==='cigarros'){ document.querySelector('#tabCigarros').classList.add('active'); document.querySelector('#cigarrosSection').classList.remove('hidden'); }
+    }
+    document.getElementById('tabFaltantes').addEventListener('click', ()=>activateTab('faltantes'));
+    document.getElementById('tabBebidas').addEventListener('click', ()=>activateTab('bebidas'));
+    document.getElementById('tabFeria').addEventListener('click', ()=>activateTab('feria'));
+    document.getElementById('tabCigarros').addEventListener('click', ()=>activateTab('cigarros'));
+
+    // ===== Login =====
     const userSel = document.getElementById('username');
     const passInp = document.getElementById('password');
     userSel.addEventListener('change', ()=>{ passInp.classList.toggle('hidden', userSel.value !== 'admin'); });
+    function showLoginError(msg){ const e=document.getElementById('loginError'); e.style.display='block'; e.textContent=msg; }
 
-    function doLogin(){
+    async function upsertCigPrices(){
+      await db.ref('cigarrosPrecios').update(CIG_PRICE_UPSERT);
+    }
+
+    async function doLogin(){
       const u = (userSel.value||'').toLowerCase();
-      if (!u) return alert('Seleccione un usuario');
+      if (!u){ showLoginError('Seleccione un usuario'); return; }
       if (u === 'admin'){
-        if (passInp.value !== 'admin') return alert('Contraseña incorrecta');
+        if (passInp.value !== 'admin'){ showLoginError('Contraseña incorrecta'); return; }
         isAdmin = true; allowedStores = Object.keys(storeLabels);
       } else if (storeMap[u]){
         isAdmin = false; allowedStores = storeMap[u];
-      } else { return alert('Usuario no autorizado'); }
+      } else { showLoginError('Usuario no autorizado'); return; }
 
       currentUser = u;
-      setUserBadge(currentUser);
-      hide('#login'); show('#app');
+      document.getElementById('userTag').textContent = 'Usuario: ' + (DISPLAY_NAMES[currentUser] || currentUser);
+      document.getElementById('login').classList.add('hidden');
+      document.getElementById('app').classList.remove('hidden');
+      document.getElementById('loginError').style.display='none';
+      activateTab('faltantes');
 
-      // Mostrar solo tiendas permitidas
+      // Mostrar solo las tiendas permitidas
       Object.keys(storeLabels).forEach(id => {
         const el = document.getElementById(id);
         if (el) el.style.display = allowedStores.includes(id) ? 'block' : 'none';
       });
 
-      initListeners();
-    }
+      // Mostrar/ocultar tab Cigarros según rol
+      document.getElementById('tabCigarros').style.display = isAdmin ? '' : 'none';
 
+      // Actualizar precios (upsert)
+      await upsertCigPrices();
+
+      // Construir UIs; Cigarros solo si admin
+      initFaltantesListeners();
+      buildBebidasUI();
+      buildFeriaUI();
+      if (isAdmin) buildCigarrosUI();
+    }
     document.getElementById('login-btn').addEventListener('click', doLogin);
     userSel.addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
     passInp.addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
 
     document.getElementById('logout').addEventListener('click', ()=>{
       detachAll();
-      show('#login'); hide('#app');
+      document.getElementById('login').classList.remove('hidden');
+      document.getElementById('app').classList.add('hidden');
       userSel.value=''; passInp.value=''; passInp.classList.add('hidden');
-      setUserBadge('—');
-      // Reset visibles y listas
-      Object.keys(storeLabels).forEach(id => {
-        const el = document.getElementById(id); if(el) el.style.display='block';
-        const ul = document.getElementById(id+'-list'); if (ul) ul.innerHTML='';
+      document.getElementById('userTag').textContent = 'Usuario: —';
+      document.getElementById('loginError').style.display='none';
+      // limpiar vistas rápidas
+      ['bebidas','feria'].forEach(x=>{
+        document.getElementById(x+'Thead').innerHTML='';
+        document.getElementById(x+'Tbody').innerHTML='';
+        document.getElementById(x+'Tfoot').innerHTML='';
       });
+      document.getElementById('bebidasGrid').innerHTML='';
+      document.getElementById('feriaGrid').innerHTML='';
+      document.getElementById('cigThead').innerHTML='';
+      document.getElementById('cigTbody').innerHTML='';
+      document.getElementById('cigTfoot').innerHTML='';
+      document.getElementById('bebidasModal').style.display='none';
+      document.getElementById('feriaModal').style.display='none';
+      document.getElementById('cigPreciosModal').style.display='none';
+      document.getElementById('cigUniModal').style.display='none';
     });
   </script>
 </body>
