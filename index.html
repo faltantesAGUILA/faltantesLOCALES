@@ -16,9 +16,9 @@
     .main-title{font-size:2rem;text-align:center;margin:0 0 20px;background:linear-gradient(90deg,var(--primary2),var(--primary));-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:600}
     .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;box-shadow:0 8px 30px rgba(0,0,0,.35)}
     #login{max-width:360px;margin:40px auto}
-    input,button,select{padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:#e8eaed}
+    input,button,select,textarea{padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:#e8eaed}
     input::placeholder{color:var(--muted)}
-    input:focus,select:focus{outline:none;border-color:var(--primary2)}
+    input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary2)}
     .btn{cursor:pointer;border:none;transition:transform .06s,filter .2s}
     .btn:active{transform:translateY(1px) scale(.99)}
     .btn-primary{background:var(--primary);color:#101315}
@@ -67,8 +67,17 @@
     .pill{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid var(--border);font-size:.85rem;color:#9aa0a6}
     .note{font-size:.9rem;color:#9aa0a6}
     tfoot td{font-weight:600}
-    /* Bigger Cigarros table */
+    /* Cigarros sizing */
     #cigarrosSection table{font-size:0.95rem}
+    /* Separator row -> thin subtle line */
+    tr.sep td{
+      padding:0!important;
+      height:0!important;
+      border-bottom:1px dashed rgba(154,160,166,.35) !important;
+      background:transparent!important;
+    }
+    /* Group header for raspaditas */
+    .grp{background:#1b1c1f;color:#c4c7c5;font-weight:600}
   </style>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -109,6 +118,7 @@
         <button id="tabBebidas" class="tab-btn">Stock Bebidas</button>
         <button id="tabFeria" class="tab-btn">Pedido Feria</button>
         <button id="tabCigarros" class="tab-btn">Pedido Cigarros</button>
+        <button id="tabRasp" class="tab-btn">Pedido Raspaditas</button>
       </div>
 
       <!-- Faltantes -->
@@ -166,7 +176,6 @@
         <div id="bebidasGrid" class="bev-grid"></div>
         <div class="actions">
           <button id="pedidoBebidasBtn" class="btn btn-ghost hidden">Pedido bebidas</button>
-          <button id="pedidoBebidasCsv" class="btn btn-ghost hidden">Exportar CSV</button>
         </div>
       </div>
 
@@ -175,15 +184,14 @@
         <div id="feriaGrid" class="feria-grid"></div>
         <div class="actions">
           <button id="feriaUnificado" class="btn btn-ghost hidden">Pedido unificado</button>
-          <button id="feriaCsv" class="btn btn-ghost hidden">Exportar CSV</button>
         </div>
       </div>
 
-      <!-- Pedido Cigarros -->
+      <!-- Pedido Cigarros (Admin-only) -->
       <div id="cigarrosSection" class="card hidden">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">
           <h3 style="margin:0">Pedido Cigarros</h3>
-          <span class="note">Abajo: <b>TOTAL IMPORTE (UYU)</b> y <b>GANANCIA (UYU)</b>. (Precios por Admin)</span>
+          <span class="note">Abajo: <b>TOTAL IMPORTE (UYU)</b>, <b>GANANCIA (UYU)</b> y <b>COSTO MAURI</b>. (Precios por Admin)</span>
         </div>
         <table id="cigTable">
           <thead id="cigThead"></thead>
@@ -192,16 +200,34 @@
         </table>
         <div class="actions">
           <button id="cigUniBtn" class="btn btn-ghost hidden">Pedido unificado</button>
-          <button id="cigCsvBtn" class="btn btn-ghost hidden">Exportar CSV</button>
           <button id="cigCopyBtn" class="btn btn-ghost hidden">Copiar resumen</button>
           <button id="cigClearBtn" class="btn btn-danger hidden">Limpiar todo</button>
           <button id="cigPreciosBtn" class="btn btn-ghost hidden">Editar precios</button>
         </div>
       </div>
+
+      <!-- Pedido Raspaditas (Admin-only) -->
+      <div id="raspSection" class="card hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">
+          <h3 style="margin:0">Pedido Raspaditas</h3>
+          <span class="note">Locales: Águila, 66 y Parque. Ganancia fija 13.95%.</span>
+        </div>
+        <table id="raspTable">
+          <thead id="raspThead"></thead>
+          <tbody id="raspTbody"></tbody>
+          <tfoot id="raspTfoot"></tfoot>
+        </table>
+        <div class="actions">
+          <button id="raspUniBtn" class="btn btn-ghost hidden">Pedido unificado</button>
+          <button id="raspCopyBtn" class="btn btn-ghost hidden">Copiar resumen</button>
+          <button id="raspClearBtn" class="btn btn-danger hidden">Limpiar todo</button>
+          <button id="raspModelBtn" class="btn btn-ghost hidden">Editar modelos</button>
+        </div>
+      </div>
     </div>
   </section>
 
-  <!-- Modals -->
+  <!-- Modals existentes -->
   <div id="bebidasModal" class="modal">
     <div class="dialog">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
@@ -217,7 +243,6 @@
       </div>
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
         <button id="bebidasCopy" class="btn btn-ghost">Copiar resumen</button>
-        <button id="pedidoBebidasCsv2" class="btn btn-ghost">Exportar CSV</button>
         <button id="bebidasClose" class="btn btn-warn">Cerrar</button>
       </div>
     </div>
@@ -238,12 +263,12 @@
       </div>
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
         <button id="feriaCopy" class="btn btn-ghost">Copiar resumen</button>
-        <button id="feriaCsv2" class="btn btn-ghost">Exportar CSV</button>
         <button id="feriaClose" class="btn btn-warn">Cerrar</button>
       </div>
     </div>
   </div>
 
+  <!-- Modal editar precios cig. -->
   <div id="cigPreciosModal" class="modal">
     <div class="dialog">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
@@ -263,6 +288,7 @@
     </div>
   </div>
 
+  <!-- Unificado Cigarros -->
   <div id="cigUniModal" class="modal">
     <div class="dialog">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
@@ -278,6 +304,46 @@
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
         <button id="cigUniCopy" class="btn btn-ghost">Copiar</button>
         <button id="cigUniClose" class="btn btn-warn">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Modelos Raspaditas -->
+  <div id="raspModelModal" class="modal">
+    <div class="dialog">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <h3 style="margin:0">Modelos de Raspaditas</h3>
+        <span class="pill">Agregar/Eliminar por clase</span>
+      </div>
+      <div class="scroll" style="margin-top:10px">
+        <table>
+          <thead><tr><th>Clase</th><th>Modelos (uno por línea)</th></tr></thead>
+          <tbody id="raspModelBody"></tbody>
+        </table>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+        <button id="raspModelSave" class="btn btn-primary">Guardar modelos</button>
+        <button id="raspModelClose" class="btn btn-warn">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Unificado Raspaditas -->
+  <div id="raspUniModal" class="modal">
+    <div class="dialog">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <h3 style="margin:0">Pedido Raspaditas - Unificado</h3>
+        <span class="pill">Totales por modelo</span>
+      </div>
+      <div class="scroll" style="margin-top:10px">
+        <table id="raspUniTable">
+          <thead><tr><th>Clase</th><th>Modelo</th><th>Total</th></tr></thead>
+          <tbody id="raspUniBody"></tbody>
+        </table>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+        <button id="raspUniCopy" class="btn btn-ghost">Copiar</button>
+        <button id="raspUniClose" class="btn btn-warn">Cerrar</button>
       </div>
     </div>
   </div>
@@ -376,12 +442,13 @@
     const bevListeners = {};  // Bebidas
     const feriaListeners = {}; // Feria
     const cigListeners = {};   // Cigarros
+    const raspListeners = {};  // Raspaditas
 
     function detachBucket(bucket){
       Object.values(bucket).forEach(arr => arr.forEach(({ref,ev,fn}) => ref.off(ev, fn)));
       Object.keys(bucket).forEach(k => delete bucket[k]);
     }
-    function detachAll(){ [listeners, bevListeners, feriaListeners, cigListeners].forEach(detachBucket); }
+    function detachAll(){ [listeners, bevListeners, feriaListeners, cigListeners, raspListeners].forEach(detachBucket); }
 
     function initFaltantesListeners(){
       Object.keys(storeLabels).forEach(id => {
@@ -464,7 +531,6 @@
           </div>`;
         grid.appendChild(card);
       });
-      // Guardar cambios
       allowedStores.forEach(storeId => {
         DRINKS.forEach(d => d.sizes.forEach(size => {
           const id = `bev-${storeId}-${d.key}-${size}`;
@@ -477,7 +543,6 @@
           });
         }));
       });
-      // Cargar
       allowedStores.forEach(storeId => {
         const ref = db.ref(`stockBebidas/${storeId}`);
         bevListeners[storeId] = bevListeners[storeId] || [];
@@ -492,9 +557,7 @@
         });
         bevListeners[storeId].push({ref,ev:'value',fn:onVal});
       });
-      // Botones admin
       document.getElementById('pedidoBebidasBtn').classList.toggle('hidden', !isAdmin);
-      document.getElementById('pedidoBebidasCsv').classList.toggle('hidden', !isAdmin);
     }
     async function generarPedidoBebidas(){
       const storeIds = Object.keys(storeLabels);
@@ -509,7 +572,6 @@
       headers.forEach(h => { const th=document.createElement('th'); th.textContent=h; headTr.appendChild(th); });
       thead.appendChild(headTr);
 
-      const csvRows = [headers];
       const resumen = [];
       function pedirCalc(drinkKey, size, stockVal){
         const isTarget = size===600 || size===2250 || (drinkKey==='coca' && size===3000);
@@ -532,7 +594,6 @@
           const tr = document.createElement('tr');
           rowCells.forEach(v => { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); });
           tbody.appendChild(tr);
-          csvRows.push(rowCells);
           resumen.push(`${d.label} ${rowCells[1]}: ${rowTotal}`);
         });
       });
@@ -542,16 +603,7 @@
       const tdf2 = document.createElement('td'); tdf2.textContent = totalGeneral;
       trf.appendChild(tdf); trf.appendChild(tdf2); tfoot.appendChild(trf);
       document.getElementById('bebidasModal').style.display = 'flex';
-      function downloadCsv(){
-        const csv = csvRows.map(r => r.join(',')).join('\n');
-        const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = 'pedido_bebidas.csv'; a.click();
-        URL.revokeObjectURL(url);
-      }
-      document.getElementById('pedidoBebidasCsv').onclick = downloadCsv;
-      document.getElementById('pedidoBebidasCsv2').onclick = downloadCsv;
+
       document.getElementById('bebidasCopy').onclick = async ()=>{
         try{ await navigator.clipboard.writeText(resumen.join('\n') + `\nTOTAL GENERAL: ${totalGeneral}`); alert('Copiado'); }catch{ alert('No se pudo copiar'); }
       };
@@ -564,7 +616,6 @@
       const grid = document.getElementById('feriaGrid');
       grid.innerHTML = '';
       document.getElementById('feriaUnificado').classList.toggle('hidden', !isAdmin);
-      document.getElementById('feriaCsv').classList.toggle('hidden', !isAdmin);
       allowedStores.forEach(storeId => {
         const card = document.createElement('div');
         card.className = 'feria-card';
@@ -583,7 +634,6 @@
           </div>`;
         grid.appendChild(card);
       });
-      // Guardar
       allowedStores.forEach(storeId => {
         FERIA_PRODUCTS.forEach(p => {
           const id = `fer-${storeId}-${p.key}`;
@@ -596,7 +646,6 @@
           });
         });
       });
-      // Live
       allowedStores.forEach(storeId => {
         const ref = db.ref(`pedidoFeria/${storeId}`);
         feriaListeners[storeId] = feriaListeners[storeId] || [];
@@ -625,7 +674,6 @@
       headers.forEach(h => { const th=document.createElement('th'); th.textContent=h; headTr.appendChild(th); });
       thead.appendChild(headTr);
 
-      const csvRows = [headers];
       const resumen = [];
 
       FERIA_PRODUCTS.forEach(p => {
@@ -642,7 +690,6 @@
         const tr = document.createElement('tr');
         rowCells.forEach(v => { const td=document.createElement('td'); td.textContent=v; tr.appendChild(td); });
         tbody.appendChild(tr);
-        csvRows.push(rowCells);
         resumen.push(`${p.label}: ${rowTotal}`);
       });
 
@@ -654,16 +701,6 @@
 
       document.getElementById('feriaModal').style.display = 'flex';
 
-      function downloadCsv(){
-        const csv = csvRows.map(r => r.join(',')).join('\n');
-        const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = 'pedido_feria.csv'; a.click();
-        URL.revokeObjectURL(url);
-      }
-      document.getElementById('feriaCsv').onclick = downloadCsv;
-      document.getElementById('feriaCsv2').onclick = downloadCsv;
       document.getElementById('feriaCopy').onclick = async ()=>{
         try{ await navigator.clipboard.writeText(resumen.join('\n') + `\nTOTAL GENERAL: ${totalGeneral}`); alert('Copiado'); }catch{ alert('No se pudo copiar'); }
       };
@@ -714,9 +751,7 @@
     let cigInputGrid = []; // navegación por flechas
     let cigStoreIds = [];
 
-    // Precios (venta/costo) con ajustes
     const CIG_PRICE_UPSERT = {
-      // 20 a 2400/2064
       pacifico_20:{costo:2064, precio:2400},
       bm_20:{costo:2064, precio:2400},
       inamora_20:{costo:2064, precio:2400},
@@ -724,28 +759,22 @@
       vista_20:{costo:2064, precio:2400},
       niagara_20:{costo:2064, precio:2400},
       alaska_20:{costo:2064, precio:2400},
-      // 20 a 2300/1942
       coro_20:{costo:1942, precio:2300},
       nevada_20:{costo:1942, precio:2300},
       ocean_20:{costo:1942, precio:2300},
       calif_20:{costo:1942, precio:2300},
       madison_20:{costo:1942, precio:2300},
-      // Malboro 20 a 2300/2064
       malboro_20:{costo:2064, precio:2300},
-      // Sueltos: venta 1600, costo 1349
       cerrito:{costo:1349, precio:1600},
       peruano:{costo:1349, precio:1600},
-      // 14: venta 1750, costo 1475
       coro_14:{costo:1475, precio:1750},
       nevada_14:{costo:1475, precio:1750},
-      // 10: venta 1250 (ajuste), costos quedan como estaban
       coro_10:{costo:1019, precio:1250},
       nevada_10:{costo:1019, precio:1250},
       ocean_10:{costo:1019, precio:1250},
       calif_10:{costo:1019, precio:1250},
       fiesta_10:{costo:1019, precio:1250},
       malboro_10:{costo:1074, precio:1250},
-      // 10 a 1400/1074 (resto)
       pacifico_10:{costo:1074, precio:1400},
       bm_10:{costo:1074, precio:1400},
       inamora_10:{costo:1074, precio:1400},
@@ -756,7 +785,6 @@
     };
 
     function buildCigarrosUI(){
-      // Si no es admin, bloquear completamente esta vista
       if (!isAdmin){
         document.getElementById('tabCigarros').style.display = 'none';
         document.getElementById('cigarrosSection').classList.add('hidden');
@@ -764,10 +792,7 @@
       } else {
         document.getElementById('tabCigarros').style.display = '';
       }
-
-      // Admin actions visibles
       document.getElementById('cigPreciosBtn').classList.remove('hidden');
-      document.getElementById('cigCsvBtn').classList.remove('hidden');
       document.getElementById('cigCopyBtn').classList.remove('hidden');
       document.getElementById('cigUniBtn').classList.remove('hidden');
       document.getElementById('cigClearBtn').classList.remove('hidden');
@@ -784,7 +809,9 @@
       });
       thead.appendChild(head);
 
-      // Body rows: construir matriz de inputs para navegación
+      // Separadores (2 líneas) y también después de Alaska 20
+      const SEP_AFTER = new Set(['fiesta_20','peruano','nevada_14','malboro_10','alaska_20']);
+
       cigInputGrid = [];
       CIG_PRODUCTS.forEach((prod, rowIdx) => {
         const tr = document.createElement('tr'); tr.dataset.key = prod.key;
@@ -793,7 +820,7 @@
         cigStoreIds.forEach((sid, colIdx) => {
           const td = document.createElement('td');
           const inp = document.createElement('input');
-          inp.type='number'; inp.min='0'; inp.step='1'; // sin placeholder (0 invisible)
+          inp.type='number'; inp.min='0'; inp.step='1';
           inp.id=`cig-${sid}-${prod.key}`;
           inp.dataset.row = rowIdx;
           inp.dataset.col = colIdx;
@@ -808,17 +835,26 @@
         const totalTd = document.createElement('td'); totalTd.id = `cig-total-${prod.key}`; totalTd.textContent='0'; tr.appendChild(totalTd);
         tbody.appendChild(tr);
         cigInputGrid.push(rowInputs);
+
+        if (SEP_AFTER.has(prod.key)){
+          for (let i=0;i<2;i++){
+            const sep=document.createElement('tr'); sep.className='sep';
+            const td=document.createElement('td'); td.colSpan=cigStoreIds.length+2; td.setAttribute('aria-hidden','true'); td.innerHTML='&nbsp;';
+            sep.appendChild(td); tbody.appendChild(sep);
+          }
+        }
       });
 
-      // Footer: IMPORTE y GANANCIA por local
       const importeRow = document.createElement('tr');
       importeRow.innerHTML = `<td>TOTAL IMPORTE (UYU)</td>${cigStoreIds.map(sid=>`<td id="cig-importe-${sid}">—</td>`).join('')}<td id="cig-importe-general">—</td>`;
       tfoot.appendChild(importeRow);
       const profitRow = document.createElement('tr');
       profitRow.innerHTML = `<td>GANANCIA (UYU)</td>${cigStoreIds.map(sid=>`<td id="cig-ganancia-${sid}">—</td>`).join('')}<td id="cig-ganancia-general">—</td>`;
       tfoot.appendChild(profitRow);
+      const mauriRow = document.createElement('tr');
+      mauriRow.innerHTML = `<td>COSTO MAURI</td>${cigStoreIds.map(()=>`<td>—</td>`).join('')}<td id="cig-costo-mauri">—</td>`;
+      tfoot.appendChild(mauriRow);
 
-      // Data listeners
       const priceRef = db.ref('cigarrosPrecios');
       const priceFn = priceRef.on('value', snap => { cigPrices = snap.val() || {}; recalcCigarros(); });
       cigListeners['_prices'] = [{ref:priceRef, ev:'value', fn:priceFn}];
@@ -827,7 +863,7 @@
         const ref = db.ref(`pedidoCigarros/${sid}`);
         const fn = ref.on('value', snap => {
           cigData[sid] = snap.val() || {};
-          CIG_PRODUCTS.forEach((p, r) => {
+          CIG_PRODUCTS.forEach((p) => {
             const el = document.getElementById(`cig-${sid}-${p.key}`);
             if (el){
               const v = cigData[sid]?.[p.key] ?? '';
@@ -840,8 +876,6 @@
         cigListeners[sid].push({ref, ev:'value', fn});
       });
 
-      // Botones
-      document.getElementById('cigCsvBtn').onclick = exportCigCsv;
       document.getElementById('cigCopyBtn').onclick = copyCigResumen;
       document.getElementById('cigPreciosBtn').onclick = openCigPrecios;
       document.getElementById('cigUniBtn').onclick = openCigUnificado;
@@ -852,18 +886,12 @@
       const r = parseInt(el.dataset.row,10);
       const c = parseInt(el.dataset.col,10);
       if (Number.isNaN(r) || Number.isNaN(c)) return;
-
       let target = null;
       if (e.key === 'ArrowRight'){ target = cigInputGrid[r]?.[c+1] || null; }
       else if (e.key === 'ArrowLeft'){ target = cigInputGrid[r]?.[c-1] || null; }
       else if (e.key === 'ArrowDown'){ target = cigInputGrid[r+1]?.[c] || null; }
       else if (e.key === 'ArrowUp'){ target = cigInputGrid[r-1]?.[c] || null; }
-
-      if (target){
-        e.preventDefault();
-        target.focus();
-        target.select();
-      }
+      if (target){ e.preventDefault(); target.focus(); target.select(); }
     }
 
     function recalcCigarros(){
@@ -871,7 +899,6 @@
       let importeGeneral = 0;
       let gananciaGeneral = 0;
 
-      // Totales por producto
       CIG_PRODUCTS.forEach(p => {
         let rowTotal = 0;
         storeIds.forEach(sid => {
@@ -881,7 +908,6 @@
         const td = document.getElementById(`cig-total-${p.key}`); if (td) td.textContent = rowTotal;
       });
 
-      // Totales por columna: importe y ganancia
       storeIds.forEach(sid => {
         let importe = 0;
         let ganancia = 0;
@@ -899,48 +925,7 @@
       });
       const impG = document.getElementById('cig-importe-general'); if (impG) impG.textContent = importeGeneral > 0 ? importeGeneral.toFixed(2) : '—';
       const ganG = document.getElementById('cig-ganancia-general'); if (ganG) ganG.textContent = gananciaGeneral > 0 ? gananciaGeneral.toFixed(2) : '—';
-    }
-
-    function exportCigCsv(){
-      const storeIds = cigStoreIds.length ? cigStoreIds : Object.keys(storeLabels);
-      const headers = ['Producto', ...storeIds.map(sid => storeLabels[sid]), 'Total'];
-      const rows = [headers];
-      CIG_PRODUCTS.forEach(p => {
-        const line = [p.label];
-        let rowTotal = 0;
-        storeIds.forEach(sid => {
-          const qty = parseInt(cigData?.[sid]?.[p.key] || 0, 10) || 0;
-          rowTotal += qty;
-          line.push(qty);
-        });
-        line.push(rowTotal);
-        rows.push(line);
-      });
-      // Footer: importe y ganancia
-      const importeRow = ['TOTAL IMPORTE (UYU)'];
-      const gananciaRow = ['GANANCIA (UYU)'];
-      let impG=0, ganG=0;
-      storeIds.forEach(sid => {
-        let imp=0, gan=0;
-        CIG_PRODUCTS.forEach(p => {
-          const qty = parseInt(cigData?.[sid]?.[p.key] || 0, 10) || 0;
-          const prec = cigPrices?.[p.key] || {};
-          const costo = parseFloat(prec.costo || 0) || 0;
-          const precio = parseFloat(prec.precio || 0) || 0;
-          imp += precio*qty;
-          gan += Math.max(0, precio-costo)*qty;
-        });
-        importeRow.push(imp.toFixed(2)); impG += imp;
-        gananciaRow.push(gan.toFixed(2)); ganG += gan;
-      });
-      importeRow.push(impG.toFixed(2)); gananciaRow.push(ganG.toFixed(2));
-      rows.push(importeRow); rows.push(gananciaRow);
-      const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
-      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = 'pedido_cigarros.csv'; a.click();
-      URL.revokeObjectURL(url);
+      const costoMauriEl = document.getElementById('cig-costo-mauri'); if (costoMauriEl){ const cm = Math.max(0, importeGeneral - gananciaGeneral); costoMauriEl.textContent = cm > 0 ? cm.toFixed(2) : '—'; }
     }
 
     function copyCigResumen(){
@@ -964,6 +949,7 @@
       });
       const impG = Object.values(imp).reduce((a,b)=>a+b,0);
       const ganG = Object.values(gan).reduce((a,b)=>a+b,0);
+      const costoMauri = Math.max(0, impG - ganG);
       lines.push('---');
       lines.push('TOTAL IMPORTE (UYU) por local:');
       storeIds.forEach(sid => lines.push(`${storeLabels[sid]}: ${imp[sid].toFixed(2)}`));
@@ -971,10 +957,10 @@
       lines.push('GANANCIA (UYU) por local:');
       storeIds.forEach(sid => lines.push(`${storeLabels[sid]}: ${gan[sid].toFixed(2)}`));
       lines.push(`GENERAL: ${ganG.toFixed(2)}`);
+      lines.push(`COSTO MAURI: ${costoMauri.toFixed(2)}`);
       navigator.clipboard.writeText(lines.join('\n')).then(()=> alert('Copiado al portapapeles')).catch(()=> alert('No se pudo copiar'));
     }
 
-    // Limpiar todo (Admin)
     async function clearCigAll(){
       if (!isAdmin) return;
       if (!confirm('¿Seguro querés poner todo en 0 para todos los locales?')) return;
@@ -986,7 +972,6 @@
       alert('Pedido de cigarros limpiado.');
     }
 
-    // Modal de precios
     function openCigPrecios(){
       const body = document.getElementById('cigPrecioBody');
       body.innerHTML='';
@@ -1013,7 +998,6 @@
       document.getElementById('cigPreciosModal').style.display='none';
     };
 
-    // Unificado Cigarros (solo totales)
     function openCigUnificado(){
       const storeIds = cigStoreIds.length ? cigStoreIds : Object.keys(storeLabels);
       const tbody = document.getElementById('cigUniBody');
@@ -1035,24 +1019,325 @@
     }
     document.getElementById('cigUniClose').onclick = ()=> document.getElementById('cigUniModal').style.display='none';
 
+    // ===== Pedido Raspaditas =====
+    const RASP_CLASSES = [25,30,40,50,100];
+    const RASP_GAIN_PCT = 0.1395; // 13.95%
+    // Solo estos locales
+    const RASP_STORE_IDS = ['store1','store2','store3']; // Águila, 66, Parque
+    let raspModels = {};  // { clase: { modelKey: nombre } }
+    let raspData = {};    // { storeId: { clase: { modelKey: qty } } }
+    let raspInputGrid = [];
+    let raspStoreIds = []; // se fijará a RASP_STORE_IDS
+
+    function keyFromName(name){
+      return (name||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+    }
+
+    const DEFAULT_RASP_MODELS = {
+      25: { [keyFromName('Numeros')]: 'Numeros' },
+      30: (['Horoscopo','Arbol','Alquimista','Tateti','Emoticon','Yapa']).reduce((o,n)=> (o[keyFromName(n)]=n,o), {}),
+      40: (['Fruta','J.Rapida','Domino','Mandala','Bingo','Bingo Magico']).reduce((o,n)=> (o[keyFromName(n)]=n,o), {}),
+      50: (['Fuego Hielo','7 de Fuego','Banco','Cincuenta','3de3','Legionarios']).reduce((o,n)=> (o[keyFromName(n)]=n,o), {}),
+      100: { [keyFromName('Bingo')]: 'Bingo' }
+    };
+
+    async function ensureRaspModelsSeed(){
+      const snap = await db.ref('raspaditasModelos').once('value');
+      const cur = snap.val();
+      if (!cur){
+        await db.ref('raspaditasModelos').set(DEFAULT_RASP_MODELS);
+        raspModels = DEFAULT_RASP_MODELS;
+      } else {
+        raspModels = cur;
+      }
+    }
+
+    let raspModelsListenerAttached = false;
+    function attachRaspModelsListenerOnce(){
+      if (raspModelsListenerAttached) return;
+      const mdlRef = db.ref('raspaditasModelos');
+      const onMdl = mdlRef.on('value', snap => {
+        raspModels = snap.val() || {};
+        buildRaspUI(); // reconstruye con nuevos modelos
+      });
+      raspListeners['_models'] = [{ref:mdlRef, ev:'value', fn:onMdl}];
+      raspModelsListenerAttached = true;
+    }
+
+    function buildRaspUI(){
+      if (!isAdmin){
+        document.getElementById('tabRasp').style.display='none';
+        document.getElementById('raspSection').classList.add('hidden');
+        return;
+      } else {
+        document.getElementById('tabRasp').style.display='';
+      }
+      document.getElementById('raspUniBtn').classList.remove('hidden');
+      document.getElementById('raspCopyBtn').classList.remove('hidden');
+      document.getElementById('raspClearBtn').classList.remove('hidden');
+      document.getElementById('raspModelBtn').classList.remove('hidden');
+
+      const thead = document.getElementById('raspThead');
+      const tbody = document.getElementById('raspTbody');
+      const tfoot = document.getElementById('raspTfoot');
+      thead.innerHTML = tbody.innerHTML = tfoot.innerHTML = '';
+
+      raspStoreIds = RASP_STORE_IDS.slice();
+      const head = document.createElement('tr');
+      ['Clase/Modelo', ...raspStoreIds.map(sid=>storeLabels[sid]), 'Total'].forEach(h=>{
+        const th = document.createElement('th'); th.textContent=h; head.appendChild(th);
+      });
+      thead.appendChild(head);
+
+      // Grid reset
+      raspInputGrid = [];
+      let rowIdx = 0;
+      RASP_CLASSES.forEach(cls => {
+        // Group header row
+        const trh = document.createElement('tr'); trh.className='grp';
+        const th = document.createElement('td'); th.textContent = `Clase ${cls} UYU`; trh.appendChild(th);
+        for(let i=0;i<raspStoreIds.length+1;i++){ const td=document.createElement('td'); td.textContent = '—'; trh.appendChild(td); }
+        tbody.appendChild(trh);
+
+        const models = raspModels[cls] || {};
+        const modelEntries = Object.entries(models);
+        if (modelEntries.length === 0){
+          const tr = document.createElement('tr');
+          const td = document.createElement('td'); td.colSpan = raspStoreIds.length+2; td.innerHTML = '<span class="muted">No hay modelos cargados (usá "Editar modelos")</span>'; tr.appendChild(td);
+          tbody.appendChild(tr);
+          rowIdx++;
+        } else {
+          modelEntries.forEach(([mkey, mname]) => {
+            const tr = document.createElement('tr'); tr.dataset.cls = cls; tr.dataset.model = mkey;
+            const first = document.createElement('td'); first.textContent = `${mname}`; tr.appendChild(first);
+            const rowInputs = [];
+            raspStoreIds.forEach((sid, colIdx) => {
+              const td = document.createElement('td');
+              const inp = document.createElement('input');
+              inp.type='number'; inp.min='0'; inp.step='1';
+              inp.id = `rasp-${sid}-${cls}-${mkey}`;
+              inp.dataset.row = rowIdx;
+              inp.dataset.col = colIdx;
+              inp.addEventListener('keydown', (e)=> handleRaspArrows(e, inp));
+              inp.addEventListener('change', ()=>{
+                const v = parseInt(inp.value,10); const clean=isNaN(v)?0:v;
+                db.ref(`pedidoRasp/${sid}/${cls}/${mkey}`).set(clean);
+              });
+              td.appendChild(inp); tr.appendChild(td);
+              rowInputs.push(inp);
+            });
+            const totalTd = document.createElement('td'); totalTd.id = `rasp-total-${cls}-${mkey}`; totalTd.textContent='0'; tr.appendChild(totalTd);
+            tbody.appendChild(tr);
+            raspInputGrid[rowIdx] = rowInputs;
+            rowIdx++;
+          });
+        }
+
+        // Separador tenue entre clases (2 líneas)
+        for (let i=0;i<2;i++){
+          const sep=document.createElement('tr'); sep.className='sep';
+          const td=document.createElement('td'); td.colSpan=raspStoreIds.length+2; td.setAttribute('aria-hidden','true'); td.innerHTML='&nbsp;';
+          sep.appendChild(td); tbody.appendChild(sep);
+        }
+      });
+
+      // Footer: Importe / Ganancia / Costo total
+      const importeRow = document.createElement('tr');
+      importeRow.innerHTML = `<td>TOTAL IMPORTE (UYU)</td>${raspStoreIds.map(sid=>`<td id="rasp-imp-${sid}">—</td>`).join('')}<td id="rasp-imp-G">—</td>`;
+      tfoot.appendChild(importeRow);
+      const ganRow = document.createElement('tr');
+      ganRow.innerHTML = `<td>GANANCIA 13.95% (UYU)</td>${raspStoreIds.map(sid=>`<td id="rasp-gan-${sid}">—</td>`).join('')}<td id="rasp-gan-G">—</td>`;
+      tfoot.appendChild(ganRow);
+      const costoRow = document.createElement('tr');
+      costoRow.innerHTML = `<td>COSTO TOTAL COMPRA (UYU)</td>${raspStoreIds.map(()=>`<td>—</td>`).join('')}<td id="rasp-cost-G">—</td>`;
+      tfoot.appendChild(costoRow);
+
+      // Listeners de cantidades por local
+      raspStoreIds.forEach(sid => {
+        const ref = db.ref(`pedidoRasp/${sid}`);
+        const fn = ref.on('value', snap => {
+          raspData[sid] = snap.val() || {};
+          RASP_CLASSES.forEach(cls => {
+            const models = raspModels[cls] || {};
+            Object.keys(models).forEach(mkey => {
+              const el = document.getElementById(`rasp-${sid}-${cls}-${mkey}`);
+              if (!el) return;
+              const val = raspData?.[sid]?.[cls]?.[mkey] ?? '';
+              el.value = val === 0 ? '' : val;
+            });
+          });
+          recalcRasp();
+        });
+        raspListeners[sid] = raspListeners[sid] || []; raspListeners[sid].push({ref,ev:'value',fn});
+      });
+
+      document.getElementById('raspCopyBtn').onclick = copyRasp;
+      document.getElementById('raspUniBtn').onclick = openRaspUni;
+      document.getElementById('raspClearBtn').onclick = clearRaspAll;
+      document.getElementById('raspModelBtn').onclick = openRaspModelEditor;
+    }
+
+    function handleRaspArrows(e, el){
+      const r = parseInt(el.dataset.row,10);
+      const c = parseInt(el.dataset.col,10);
+      if (Number.isNaN(r) || Number.isNaN(c)) return;
+      let target=null;
+      if (e.key==='ArrowRight'){ target = raspInputGrid[r]?.[c+1] || null; }
+      else if (e.key==='ArrowLeft'){ target = raspInputGrid[r]?.[c-1] || null; }
+      else if (e.key==='ArrowDown'){ target = raspInputGrid[r+1]?.[c] || null; }
+      else if (e.key==='ArrowUp'){ target = raspInputGrid[r-1]?.[c] || null; }
+      if (target){ e.preventDefault(); target.focus(); target.select(); }
+    }
+
+    function recalcRasp(){
+      const storeIds = raspStoreIds.length ? raspStoreIds : ['store1','store2','store3'];
+      let impG = 0, ganG = 0;
+      RASP_CLASSES.forEach(cls => {
+        const models = raspModels[cls] || {};
+        Object.keys(models).forEach(mkey => {
+          let tot = 0;
+          storeIds.forEach(sid => { tot += parseInt(raspData?.[sid]?.[cls]?.[mkey]||0,10)||0; });
+          const td = document.getElementById(`rasp-total-${cls}-${mkey}`); if(td) td.textContent = tot;
+        });
+      });
+      storeIds.forEach(sid => {
+        let imp = 0;
+        RASP_CLASSES.forEach(cls => {
+          const models = raspModels[cls] || {};
+          Object.keys(models).forEach(mkey => {
+            const q = parseInt(raspData?.[sid]?.[cls]?.[mkey]||0,10)||0;
+            imp += q * cls;
+          });
+        });
+        const gan = imp * RASP_GAIN_PCT;
+        const impEl = document.getElementById(`rasp-imp-${sid}`); if (impEl) impEl.textContent = imp>0?imp.toFixed(2):'—';
+        const ganEl = document.getElementById(`rasp-gan-${sid}`); if (ganEl) ganEl.textContent = gan>0?gan.toFixed(2):'—';
+        impG += imp; ganG += gan;
+      });
+      const impGE = document.getElementById('rasp-imp-G'); if (impGE) impGE.textContent = impG>0?impG.toFixed(2):'—';
+      const ganGE = document.getElementById('rasp-gan-G'); if (ganGE) ganGE.textContent = ganG>0?ganG.toFixed(2):'—';
+      const costGE = document.getElementById('rasp-cost-G'); if (costGE) costGE.textContent = (impG-ganG)>0 ? (impG-ganG).toFixed(2) : '—';
+    }
+
+    function copyRasp(){
+      const storeIds = raspStoreIds.length ? raspStoreIds : ['store1','store2','store3'];
+      const lines = [];
+      RASP_CLASSES.forEach(cls => {
+        const models = raspModels[cls] || {};
+        const keys = Object.keys(models);
+        if (keys.length){
+          lines.push(`Clase ${cls}`);
+          keys.forEach(mkey => {
+            const total = storeIds.reduce((sum,sid)=> sum + (parseInt(raspData?.[sid]?.[cls]?.[mkey]||0,10)||0), 0);
+            if (total>0) lines.push(`- ${models[mkey]}: ${total}`);
+          });
+        }
+      });
+      // Totales
+      let impG=0, ganG=0;
+      storeIds.forEach(sid => {
+        let imp=0;
+        RASP_CLASSES.forEach(cls=>{
+          const models = raspModels[cls]||{};
+          Object.keys(models).forEach(mkey=>{ imp += (parseInt(raspData?.[sid]?.[cls]?.[mkey]||0,10)||0) * cls; });
+        });
+        const gan=imp*RASP_GAIN_PCT; impG+=imp; ganG+=gan;
+      });
+      lines.push('---');
+      lines.push(`TOTAL IMPORTE (UYU): ${impG.toFixed(2)}`);
+      lines.push(`GANANCIA 13.95% (UYU): ${ganG.toFixed(2)}`);
+      lines.push(`COSTO TOTAL COMPRA (UYU): ${(impG-ganG).toFixed(2)}`);
+      navigator.clipboard.writeText(lines.join('\n')).then(()=> alert('Copiado al portapapeles')).catch(()=> alert('No se pudo copiar'));
+    }
+
+    async function clearRaspAll(){
+      if (!isAdmin) return;
+      if (!confirm('¿Seguro querés poner todo en 0 para Raspaditas (Águila/66/Parque)?')) return;
+      const updates = {};
+      ['store1','store2','store3'].forEach(sid => {
+        RASP_CLASSES.forEach(cls => {
+          const models = raspModels[cls] || {};
+          Object.keys(models).forEach(mkey => {
+            updates[`pedidoRasp/${sid}/${cls}/${mkey}`] = 0;
+          });
+        });
+      });
+      await db.ref().update(updates);
+      alert('Pedido de raspaditas limpiado.');
+    }
+
+    function openRaspModelEditor(){
+      const body = document.getElementById('raspModelBody');
+      body.innerHTML = '';
+      RASP_CLASSES.forEach(cls => {
+        const tr = document.createElement('tr');
+        const td1 = document.createElement('td'); td1.textContent = `Clase ${cls}`; tr.appendChild(td1);
+        const td2 = document.createElement('td');
+        const ta = document.createElement('textarea');
+        ta.style.width='100%'; ta.style.minHeight='80px'; ta.id = `rasp-models-${cls}`;
+        const models = raspModels[cls] || {};
+        ta.value = Object.values(models).join('\n');
+        td2.appendChild(ta); tr.appendChild(td2);
+        body.appendChild(tr);
+      });
+      document.getElementById('raspModelModal').style.display='flex';
+    }
+    document.getElementById('raspModelClose').onclick = ()=> document.getElementById('raspModelModal').style.display='none';
+    document.getElementById('raspModelSave').onclick = async ()=>{
+      const updates = {};
+      RASP_CLASSES.forEach(cls => {
+        const raw = (document.getElementById(`rasp-models-${cls}`).value||'').split('\n').map(s=>s.trim()).filter(Boolean);
+        const obj = {};
+        raw.forEach(name => { obj[keyFromName(name)] = name; });
+        updates[cls] = obj;
+      });
+      await db.ref('raspaditasModelos').set(updates);
+      document.getElementById('raspModelModal').style.display='none';
+    };
+
+    function openRaspUni(){
+      const storeIds = raspStoreIds.length ? raspStoreIds : ['store1','store2','store3'];
+      const tbody = document.getElementById('raspUniBody');
+      tbody.innerHTML='';
+      const lines = [];
+      RASP_CLASSES.forEach(cls => {
+        const models = raspModels[cls] || {};
+        Object.entries(models).forEach(([mkey, mname]) => {
+          const total = storeIds.reduce((sum,sid)=> sum + (parseInt(raspData?.[sid]?.[cls]?.[mkey]||0,10)||0), 0);
+          if (total>0){
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${cls}</td><td>${mname}</td><td>${total}</td>`;
+            tbody.appendChild(tr);
+            lines.push(`${cls} - ${mname}: ${total}`);
+          }
+        });
+      });
+      document.getElementById('raspUniModal').style.display='flex';
+      document.getElementById('raspUniCopy').onclick = async ()=>{
+        try{ await navigator.clipboard.writeText(lines.join('\n')); alert('Copiado'); }catch{ alert('No se pudo copiar'); }
+      };
+    }
+    document.getElementById('raspUniClose').onclick = ()=> document.getElementById('raspUniModal').style.display='none';
+
     // ===== Tabs =====
     function activateTab(id){
-      ['#tabFaltantes','#tabBebidas','#tabFeria','#tabCigarros'].forEach(t=>{ const x=document.querySelector(t); if(x) x.classList.remove('active'); });
-      ['#faltantesSection','#bebidasSection','#feriaSection','#cigarrosSection'].forEach(s=> document.querySelector(s).classList.add('hidden'));
+      ['#tabFaltantes','#tabBebidas','#tabFeria','#tabCigarros', '#tabRasp'].forEach(t=>{ const x=document.querySelector(t); if(x) x.classList.remove('active'); });
+      ['#faltantesSection','#bebidasSection','#feriaSection','#cigarrosSection', '#raspSection'].forEach(s=> document.querySelector(s).classList.add('hidden'));
 
-      if (id==='cigarros' && !isAdmin){
-        // Bloquear acceso si no es admin
-        id = 'faltantes';
-      }
+      if (id==='cigarros' && !isAdmin){ id = 'faltantes'; }
+      if (id==='rasp' && !isAdmin){ id = 'faltantes'; }
+
       if (id==='faltantes'){ document.querySelector('#tabFaltantes').classList.add('active'); document.querySelector('#faltantesSection').classList.remove('hidden'); }
       if (id==='bebidas'){ document.querySelector('#tabBebidas').classList.add('active'); document.querySelector('#bebidasSection').classList.remove('hidden'); }
       if (id==='feria'){ document.querySelector('#tabFeria').classList.add('active'); document.querySelector('#feriaSection').classList.remove('hidden'); }
       if (id==='cigarros'){ document.querySelector('#tabCigarros').classList.add('active'); document.querySelector('#cigarrosSection').classList.remove('hidden'); }
+      if (id==='rasp'){ document.querySelector('#tabRasp').classList.add('active'); document.querySelector('#raspSection').classList.remove('hidden'); }
     }
     document.getElementById('tabFaltantes').addEventListener('click', ()=>activateTab('faltantes'));
     document.getElementById('tabBebidas').addEventListener('click', ()=>activateTab('bebidas'));
     document.getElementById('tabFeria').addEventListener('click', ()=>activateTab('feria'));
     document.getElementById('tabCigarros').addEventListener('click', ()=>activateTab('cigarros'));
+    document.getElementById('tabRasp').addEventListener('click', ()=>activateTab('rasp'));
 
     // ===== Login =====
     const userSel = document.getElementById('username');
@@ -1081,23 +1366,27 @@
       document.getElementById('loginError').style.display='none';
       activateTab('faltantes');
 
-      // Mostrar solo las tiendas permitidas
       Object.keys(storeLabels).forEach(id => {
         const el = document.getElementById(id);
         if (el) el.style.display = allowedStores.includes(id) ? 'block' : 'none';
       });
 
-      // Mostrar/ocultar tab Cigarros según rol
       document.getElementById('tabCigarros').style.display = isAdmin ? '' : 'none';
+      document.getElementById('tabRasp').style.display = isAdmin ? '' : 'none';
 
-      // Actualizar precios (upsert)
       await upsertCigPrices();
 
-      // Construir UIs; Cigarros solo si admin
+      // Seed y listener de modelos de raspaditas
+      await ensureRaspModelsSeed();
+      attachRaspModelsListenerOnce();
+
       initFaltantesListeners();
       buildBebidasUI();
       buildFeriaUI();
-      if (isAdmin) buildCigarrosUI();
+      if (isAdmin){
+        buildCigarrosUI();
+        buildRaspUI();
+      }
     }
     document.getElementById('login-btn').addEventListener('click', doLogin);
     userSel.addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
@@ -1105,26 +1394,26 @@
 
     document.getElementById('logout').addEventListener('click', ()=>{
       detachAll();
+      raspModelsListenerAttached = false;
       document.getElementById('login').classList.remove('hidden');
       document.getElementById('app').classList.add('hidden');
       userSel.value=''; passInp.value=''; passInp.classList.add('hidden');
       document.getElementById('userTag').textContent = 'Usuario: —';
       document.getElementById('loginError').style.display='none';
-      // limpiar vistas rápidas
       ['bebidas','feria'].forEach(x=>{
         document.getElementById(x+'Thead').innerHTML='';
         document.getElementById(x+'Tbody').innerHTML='';
         document.getElementById(x+'Tfoot').innerHTML='';
       });
-      document.getElementById('bebidasGrid').innerHTML='';
-      document.getElementById('feriaGrid').innerHTML='';
-      document.getElementById('cigThead').innerHTML='';
-      document.getElementById('cigTbody').innerHTML='';
-      document.getElementById('cigTfoot').innerHTML='';
+      ['bebidasGrid','feriaGrid','cigThead','cigTbody','cigTfoot','raspThead','raspTbody','raspTfoot'].forEach(id=>{
+        const el=document.getElementById(id); if(el) el.innerHTML='';
+      });
       document.getElementById('bebidasModal').style.display='none';
       document.getElementById('feriaModal').style.display='none';
       document.getElementById('cigPreciosModal').style.display='none';
       document.getElementById('cigUniModal').style.display='none';
+      document.getElementById('raspModelModal').style.display='none';
+      document.getElementById('raspUniModal').style.display='none';
     });
   </script>
 </body>
