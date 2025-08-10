@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AGUILA</title>
+  <title>Faltantes de Locales</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
     :root{
@@ -78,6 +78,15 @@
     }
     /* Group header for raspaditas */
     .grp{background:#1b1c1f;color:#c4c7c5;font-weight:600}
+    /* Ganancias section */
+    #ganSection .header{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:12px}
+    #ganControls{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;align-items:end}
+    #ganDelete{display:flex;gap:8px;align-items:center;grid-column:1/-1}
+    .subgrid{display:grid;gap:12px}
+    @media(min-width:900px){.subgrid{grid-template-columns:1fr 1fr}}
+    .subcard{border:1px solid var(--border);border-radius:12px;padding:12px;background:var(--card)}
+    .subcard h4{margin:0 0 8px}
+    .kpi{margin-top:8px;font-size:.95rem;color:#c4c7c5}
   </style>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -85,7 +94,7 @@
 <body>
   <!-- LOGIN -->
   <section id="login" class="card">
-    <h1 class="main-title">AGUILA</h1>
+    <h1 class="main-title">Faltantes de Locales</h1>
     <div style="display:grid;gap:10px">
       <select id="username">
         <option value="">-- Elige usuario --</option>
@@ -106,7 +115,7 @@
   <section id="app" class="hidden">
     <div class="container">
       <div class="topbar">
-        <h1 class="main-title">AGUILA</h1>
+        <h1 class="main-title">Faltantes de Locales</h1>
         <div class="userbar">
           <span class="muted" id="userTag">Usuario: —</span>
           <button id="logout" class="btn btn-warn">Cambiar usuario</button>
@@ -119,6 +128,7 @@
         <button id="tabFeria" class="tab-btn">Pedido Feria</button>
         <button id="tabCigarros" class="tab-btn">Pedido Cigarros</button>
         <button id="tabRasp" class="tab-btn">Pedido Raspaditas</button>
+        <button id="tabGan" class="tab-btn">Ganancias</button>
       </div>
 
       <!-- Faltantes -->
@@ -203,6 +213,7 @@
           <button id="cigCopyBtn" class="btn btn-ghost hidden">Copiar resumen</button>
           <button id="cigClearBtn" class="btn btn-danger hidden">Limpiar todo</button>
           <button id="cigPreciosBtn" class="btn btn-ghost hidden">Editar precios</button>
+          <button id="cigSaveDay" class="btn btn-primary hidden">Guardar ganancias del día</button>
         </div>
       </div>
 
@@ -222,12 +233,64 @@
           <button id="raspCopyBtn" class="btn btn-ghost hidden">Copiar resumen</button>
           <button id="raspClearBtn" class="btn btn-danger hidden">Limpiar todo</button>
           <button id="raspModelBtn" class="btn btn-ghost hidden">Editar modelos</button>
+          <button id="raspSaveDay" class="btn btn-primary hidden">Guardar ganancias del día</button>
         </div>
       </div>
+
+      <!-- Ganancias (Admin-only) -->
+      <div id="ganSection" class="card hidden">
+        <div class="header">
+          <h3 style="margin:0">Ganancias por Local</h3>
+          <div id="ganControls">
+            <div>
+              <label class="muted">Mes</label>
+              <input type="month" id="ganMonth" />
+            </div>
+            <div>
+              <label class="muted">Día</label>
+              <input type="date" id="ganDay" />
+            </div>
+            <div>
+              <button id="ganRefresh" class="btn btn-ghost" style="width:100%">Ver mes</button>
+            </div>
+            <div>
+              <button id="ganViewDay" class="btn btn-ghost" style="width:100%">Ver día</button>
+            </div>
+
+            <span class="muted">Borrar día guardado (si fue por error):</span>
+            <div id="ganDelete">
+              <input type="date" id="ganDeleteDate" />
+              <button id="ganDeleteBtn" class="btn btn-danger">Borrar día</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="subgrid">
+          <div class="subcard">
+            <h4>Ganancias del día seleccionado (Cigarros + Raspaditas)</h4>
+            <table>
+              <thead><tr><th>Local</th><th>Ganancia Día (UYU)</th></tr></thead>
+              <tbody id="ganDayBody"></tbody>
+              <tfoot id="ganDayFoot"></tfoot>
+            </table>
+            <div class="kpi" id="ganMTDLine">TOTAL MTD (hasta el día seleccionado): —</div>
+          </div>
+
+          <div class="subcard">
+            <h4>Ganancias del mes (por local)</h4>
+            <table>
+              <thead><tr><th>Local</th><th>Ganancia Mes (UYU)</th></tr></thead>
+              <tbody id="ganLocalBody"></tbody>
+              <tfoot id="ganLocalFoot"></tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+
     </div>
   </section>
 
-  <!-- Modals existentes -->
+  <!-- Modales (bebidas/feria/cig/rasp) -->
   <div id="bebidasModal" class="modal">
     <div class="dialog">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
@@ -268,7 +331,6 @@
     </div>
   </div>
 
-  <!-- Modal editar precios cig. -->
   <div id="cigPreciosModal" class="modal">
     <div class="dialog">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
@@ -281,14 +343,13 @@
           <tbody id="cigPrecioBody"></tbody>
         </table>
       </div>
-      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
         <button id="cigPrecioSave" class="btn btn-primary">Guardar</button>
         <button id="cigPrecioClose" class="btn btn-warn">Cerrar</button>
       </div>
     </div>
   </div>
 
-  <!-- Unificado Cigarros -->
   <div id="cigUniModal" class="modal">
     <div class="dialog">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
@@ -308,7 +369,6 @@
     </div>
   </div>
 
-  <!-- Modal Modelos Raspaditas -->
   <div id="raspModelModal" class="modal">
     <div class="dialog">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
@@ -321,14 +381,13 @@
           <tbody id="raspModelBody"></tbody>
         </table>
       </div>
-      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
         <button id="raspModelSave" class="btn btn-primary">Guardar modelos</button>
         <button id="raspModelClose" class="btn btn-warn">Cerrar</button>
       </div>
     </div>
   </div>
 
-  <!-- Unificado Raspaditas -->
   <div id="raspUniModal" class="modal">
     <div class="dialog">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
@@ -371,24 +430,26 @@
     const storeMap = { aguila:['store1'], '66':['store2'], parque:['store3'], market:['store4'], multi:['store5'] };
     const storeLabels = { store1:'Águila', store2:'66', store3:'Parque', store4:'Market', store5:'Multi' };
 
-    // ===== Faltantes ↔ Feria =====
-    function stripAccents(s){
-      if (!s) return '';
-      return s.toLowerCase()
-        .replace(/á/g,'a').replace(/é/g,'e').replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u')
-        .replace(/ü/g,'u').replace(/ñ/g,'n');
+    function pad(n){ return String(n).padStart(2,'0'); }
+    function todayParts(){
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = pad(d.getMonth()+1);
+      const day = pad(d.getDate());
+      const hm = pad(d.getHours())+':'+pad(d.getMinutes());
+      return { y, m, day, hm, key: `${y}-${m}`, dkey: day, ts: d.getTime() };
     }
+
+    // == Utils ==
+    function stripAccents(s){ if (!s) return ''; return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ñ/g,'n'); }
+
+    // == Faltantes ==
     const FERIA_PRODUCTS = [
-      { key:'sertal', label:'Sertal' },
-      { key:'dorixina', label:'Dorixina' },
-      { key:'gotita_comun', label:'Gotita común' },
-      { key:'gotita_gel', label:'Gotita gel' },
-      { key:'poxilina', label:'Poxilina' },
-      { key:'ecole', label:'Ecole' },
-      { key:'beldent_negro', label:'Beldent Negro' },
-      { key:'beldent_azul', label:'Beldent Azul' },
-      { key:'beldent_verde', label:'Beldent Verde' },
-      { key:'coronado_free', label:'Coronado Free' }
+      { key:'sertal', label:'Sertal' }, { key:'dorixina', label:'Dorixina' },
+      { key:'gotita_comun', label:'Gotita común' }, { key:'gotita_gel', label:'Gotita gel' },
+      { key:'poxilina', label:'Poxilina' }, { key:'ecole', label:'Ecole' },
+      { key:'beldent_negro', label:'Beldent Negro' }, { key:'beldent_azul', label:'Beldent Azul' },
+      { key:'beldent_verde', label:'Beldent Verde' }, { key:'coronado_free', label:'Coronado Free' }
     ];
     const FERIA_MATCHERS = {
       sertal: t => stripAccents(t).includes('sertal'),
@@ -400,17 +461,14 @@
       beldent_negro: t => { const x=stripAccents(t); return x.includes('beldent') && x.includes('negro'); },
       beldent_azul: t => { const x=stripAccents(t); return x.includes('beldent') && x.includes('azul'); },
       beldent_verde: t => { const x=stripAccents(t); return x.includes('beldent') && x.includes('verde'); },
-      coronado_free: t => { const x=stripAccents(t); return (x.includes('coronado') && x.includes('free')) || x.includes('coronado free'); }
+      coronado_free: t => { const x=stripAccents(t); return x.includes('coronado') && x.includes('free'); }
     };
     function enforceFeriaMinForText(storeId, text){
       const t = text || '';
       Object.entries(FERIA_MATCHERS).forEach(([key, fn]) => {
         if (fn(t)){
           const ref = db.ref(`pedidoFeria/${storeId}/${key}`);
-          ref.transaction(current => {
-            const c = parseInt(current || 0, 10) || 0;
-            return c >= 2 ? c : 2;
-          });
+          ref.transaction(current => { const c = parseInt(current || 0, 10) || 0; return c >= 2 ? c : 2; });
         }
       });
     }
@@ -426,10 +484,7 @@
       Object.keys(FERIA_MATCHERS).forEach(key => {
         if (present[key]){
           const ref = db.ref(`pedidoFeria/${storeId}/${key}`);
-          ref.transaction(current => {
-            const c = parseInt(current || 0, 10) || 0;
-            return c >= 2 ? c : 2;
-          });
+          ref.transaction(current => { const c = parseInt(current || 0, 10) || 0; return c >= 2 ? c : 2; });
         } else {
           updates[`pedidoFeria/${storeId}/${key}`] = 0;
         }
@@ -437,44 +492,28 @@
       if (Object.keys(updates).length) await db.ref().update(updates);
     }
 
-    // ===== Faltantes UI =====
-    const listeners = {};     // Faltantes
-    const bevListeners = {};  // Bebidas
-    const feriaListeners = {}; // Feria
-    const cigListeners = {};   // Cigarros
-    const raspListeners = {};  // Raspaditas
-
-    function detachBucket(bucket){
-      Object.values(bucket).forEach(arr => arr.forEach(({ref,ev,fn}) => ref.off(ev, fn)));
-      Object.keys(bucket).forEach(k => delete bucket[k]);
-    }
+    // Listeners buckets
+    const listeners = {}, bevListeners = {}, feriaListeners = {}, cigListeners = {}, raspListeners = {};
+    function detachBucket(bucket){ Object.values(bucket).forEach(arr => arr.forEach(({ref,ev,fn}) => ref.off(ev, fn))); Object.keys(bucket).forEach(k => delete bucket[k]); }
     function detachAll(){ [listeners, bevListeners, feriaListeners, cigListeners, raspListeners].forEach(detachBucket); }
 
     function initFaltantesListeners(){
-      Object.keys(storeLabels).forEach(id => {
-        const ul = document.getElementById(id+'-list'); if (ul) ul.innerHTML='';
-      });
+      Object.keys(storeLabels).forEach(id => { const ul = document.getElementById(id+'-list'); if (ul) ul.innerHTML=''; });
       allowedStores.forEach(storeId => {
         const ref = db.ref('stores/'+storeId+'/items');
         listeners[storeId] = listeners[storeId] || [];
-        const onAdd = ref.on('child_added', snap => {
-          const v = snap.val();
-          addItemToList(storeId, snap.key, v);
-          if (v?.text) enforceFeriaMinForText(storeId, v.text);
-        });
+        const onAdd = ref.on('child_added', snap => { const v = snap.val(); addItemToList(storeId, snap.key, v); if (v?.text) enforceFeriaMinForText(storeId, v.text); });
         const onRem = ref.on('child_removed', snap => { removeItemFromList(storeId, snap.key); reevaluateFeriaForStore(storeId); });
         listeners[storeId].push({ref,ev:'child_added',fn:onAdd},{ref,ev:'child_removed',fn:onRem});
       });
       Object.keys(storeLabels).forEach(storeId => {
-        const inp = document.getElementById(storeId+'-input');
-        if (inp) inp.onkeydown = (e)=>{ if(e.key==='Enter') addItem(storeId); };
+        const inp = document.getElementById(storeId+'-input'); if (inp) inp.onkeydown = (e)=>{ if(e.key==='Enter') addItem(storeId); };
       });
     }
     window.addItem = function(storeId){
       if (!allowedStores.includes(storeId)) return;
       const inp = document.getElementById(storeId+'-input');
-      const text = (inp?.value||'').trim();
-      if (!text) return;
+      const text = (inp?.value||'').trim(); if (!text) return;
       const item = { text, createdBy: DISPLAY_NAMES[currentUser] || currentUser, ts: Date.now() };
       db.ref('stores/'+storeId+'/items').push(item);
       inp.value='';
@@ -490,9 +529,7 @@
       }
       ul.appendChild(li);
     }
-    function removeItemFromList(storeId, id){
-      const li = document.getElementById(`${storeId}-${id}`); if(li) li.remove();
-    }
+    function removeItemFromList(storeId, id){ const li = document.getElementById(`${storeId}-${id}`); if(li) li.remove(); }
 
     // ===== Stock Bebidas =====
     const SIZE_LABELS = { 250:'250 ml', 600:'600 ml', 2250:'2.25 L', 3000:'3 L' };
@@ -504,61 +541,36 @@
       { key:'coca_zero', label:'Coca Zero', sizes:[250,600,2250] }
     ];
     function buildBebidasUI(){
-      const grid = document.getElementById('bebidasGrid');
-      grid.innerHTML = '';
+      const grid = document.getElementById('bebidasGrid'); grid.innerHTML = '';
       allowedStores.forEach(storeId => {
-        const card = document.createElement('div');
-        card.className = 'bev-card';
+        const card = document.createElement('div'); card.className = 'bev-card';
         const header = `<h3 style="margin-top:0">${storeLabels[storeId]}</h3>`;
         const allSizesSorted = [250,600,2250,3000];
         const headRow = `<tr><th>Bebida</th>${allSizesSorted.map(size => `<th>${SIZE_LABELS[size]}</th>`).join('')}</tr>`;
         const bodyRows = DRINKS.map(d => {
-          const tds = allSizesSorted.map(size => {
-            if (d.sizes.includes(size)){
-              return `<td><input type="number" min="0" step="1" id="bev-${storeId}-${d.key}-${size}"></td>`;
-            } else {
-              return `<td style="opacity:.35">—</td>`;
-            }
-          }).join('');
+          const tds = allSizesSorted.map(size => d.sizes.includes(size) ? `<td><input type="number" min="0" step="1" id="bev-${storeId}-${d.key}-${size}"></td>` : `<td style="opacity:.35">—</td>`).join('');
           return `<tr><td>${d.label}</td>${tds}</tr>`;
         }).join('');
-        card.innerHTML = `${header}
-          <div style="overflow:auto">
-            <table>
-              <thead>${headRow}</thead>
-              <tbody>${bodyRows}</tbody>
-            </table>
-          </div>`;
+        card.innerHTML = `${header}<div style="overflow:auto"><table><thead>${headRow}</thead><tbody>${bodyRows}</tbody></table></div>`;
         grid.appendChild(card);
       });
+      allowedStores.forEach(storeId => { DRINKS.forEach(d => d.sizes.forEach(size => {
+        const id = `bev-${storeId}-${d.key}-${size}`; const el = document.getElementById(id); if (!el) return;
+        el.addEventListener('change', ()=>{ const val = parseInt(el.value, 10); const clean = isNaN(val) ? 0 : val; db.ref(`stockBebidas/${storeId}/${d.key}/${size}`).set(clean); });
+      })); });
       allowedStores.forEach(storeId => {
-        DRINKS.forEach(d => d.sizes.forEach(size => {
-          const id = `bev-${storeId}-${d.key}-${size}`;
-          const el = document.getElementById(id);
-          if (!el) return;
-          el.addEventListener('change', ()=>{
-            const val = parseInt(el.value, 10);
-            const clean = isNaN(val) ? 0 : val;
-            db.ref(`stockBebidas/${storeId}/${d.key}/${size}`).set(clean);
-          });
-        }));
-      });
-      allowedStores.forEach(storeId => {
-        const ref = db.ref(`stockBebidas/${storeId}`);
-        bevListeners[storeId] = bevListeners[storeId] || [];
+        const ref = db.ref(`stockBebidas/${storeId}`); bevListeners[storeId] = bevListeners[storeId] || [];
         const onVal = ref.on('value', snap => {
-          const data = snap.val() || {};
-          DRINKS.forEach(d => d.sizes.forEach(size => {
-            const el = document.getElementById(`bev-${storeId}-${d.key}-${size}`);
-            if (!el) return;
-            const v = data?.[d.key]?.[size] ?? '';
-            el.value = v === 0 ? '' : v;
+          const data = snap.val() || {}; DRINKS.forEach(d => d.sizes.forEach(size => {
+            const el = document.getElementById(`bev-${storeId}-${d.key}-${size}`); if (!el) return;
+            const v = data?.[d.key]?.[size] ?? ''; el.value = v === 0 ? '' : v;
           }));
         });
         bevListeners[storeId].push({ref,ev:'value',fn:onVal});
       });
       document.getElementById('pedidoBebidasBtn').classList.toggle('hidden', !isAdmin);
     }
+
     async function generarPedidoBebidas(){
       const storeIds = Object.keys(storeLabels);
       const snaps = await Promise.all(storeIds.map(sid => db.ref('stockBebidas/'+sid).once('value')));
@@ -568,42 +580,29 @@
       const tfoot = document.getElementById('bebidasTfoot');
       thead.innerHTML = tbody.innerHTML = tfoot.innerHTML = '';
 
-      const headTr = document.createElement('tr');
-      headers.forEach(h => { const th=document.createElement('th'); th.textContent=h; headTr.appendChild(th); });
-      thead.appendChild(headTr);
+      const headTr = document.createElement('tr'); headers.forEach(h => { const th=document.createElement('th'); th.textContent=h; headTr.appendChild(th); }); thead.appendChild(headTr);
 
       const resumen = [];
-      function pedirCalc(drinkKey, size, stockVal){
-        const isTarget = size===600 || size===2250 || (drinkKey==='coca' && size===3000);
-        return isTarget ? Math.max(0, 2 - (parseInt(stockVal,10)||0)) : 0;
-      }
+      function pedirCalc(drinkKey, size, stockVal){ const isTarget = size===600 || size===2250 || (drinkKey==='coca' && size===3000); return isTarget ? Math.max(0, 2 - (parseInt(stockVal,10)||0)) : 0; }
       DRINKS.forEach(d => {
         [600,2250,3000].forEach(size => {
           if (size===3000 && d.key!=='coca') return;
           const rowCells = [d.label, (size===3000?'3 L': (size===2250?'2.25 L': size+' ml'))];
           let rowTotal = 0;
           storeIds.forEach((sid, idx) => {
-            const data = snaps[idx].val() || {};
-            const stock = data?.[d.key]?.[size] ?? 0;
-            const pedir = pedirCalc(d.key, size, stock);
-            rowTotal += pedir;
-            rowCells.push(pedir);
+            const data = snaps[idx].val() || {}; const stock = data?.[d.key]?.[size] ?? 0; const pedir = pedirCalc(d.key, size, stock);
+            rowTotal += pedir; rowCells.push(pedir);
           });
           if (rowTotal === 0) return;
           rowCells.push(rowTotal);
-          const tr = document.createElement('tr');
-          rowCells.forEach(v => { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); });
-          tbody.appendChild(tr);
+          const tr = document.createElement('tr'); rowCells.forEach(v => { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); }); tbody.appendChild(tr);
           resumen.push(`${d.label} ${rowCells[1]}: ${rowTotal}`);
         });
       });
       const totalGeneral = Array.from(tbody.querySelectorAll('tr')).reduce((sum, tr) => sum + (parseInt(tr.lastChild.textContent||'0',10)||0), 0);
-      const trf = document.createElement('tr');
-      const tdf = document.createElement('td'); tdf.colSpan = 2 + storeIds.length; tdf.textContent = 'TOTAL GENERAL';
-      const tdf2 = document.createElement('td'); tdf2.textContent = totalGeneral;
-      trf.appendChild(tdf); trf.appendChild(tdf2); tfoot.appendChild(trf);
+      const trf = document.createElement('tr'); const tdf = document.createElement('td'); tdf.colSpan = 2 + storeIds.length; tdf.textContent = 'TOTAL GENERAL';
+      const tdf2 = document.createElement('td'); tdf2.textContent = totalGeneral; trf.appendChild(tdf); trf.appendChild(tdf2); tfoot.appendChild(trf);
       document.getElementById('bebidasModal').style.display = 'flex';
-
       document.getElementById('bebidasCopy').onclick = async ()=>{
         try{ await navigator.clipboard.writeText(resumen.join('\n') + `\nTOTAL GENERAL: ${totalGeneral}`); alert('Copiado'); }catch{ alert('No se pudo copiar'); }
       };
@@ -613,49 +612,23 @@
 
     // ===== Pedido Feria =====
     function buildFeriaUI(){
-      const grid = document.getElementById('feriaGrid');
-      grid.innerHTML = '';
+      const grid = document.getElementById('feriaGrid'); grid.innerHTML = '';
       document.getElementById('feriaUnificado').classList.toggle('hidden', !isAdmin);
       allowedStores.forEach(storeId => {
-        const card = document.createElement('div');
-        card.className = 'feria-card';
-        const rows = FERIA_PRODUCTS.map(p => `
-          <tr>
-            <td>${p.label}</td>
-            <td><input type="number" min="0" step="1" id="fer-${storeId}-${p.key}"></td>
-          </tr>`).join('');
-        card.innerHTML = `
-          <h3 style="margin-top:0">${storeLabels[storeId]}</h3>
-          <div style="overflow:auto">
-            <table>
-              <thead><tr><th>Producto</th><th>Cantidad</th></tr></thead>
-              <tbody>${rows}</tbody>
-            </table>
-          </div>`;
+        const card = document.createElement('div'); card.className = 'feria-card';
+        const rows = FERIA_PRODUCTS.map(p => `<tr><td>${p.label}</td><td><input type="number" min="0" step="1" id="fer-${storeId}-${p.key}"></td></tr>`).join('');
+        card.innerHTML = `<h3 style="margin-top:0">${storeLabels[storeId]}</h3><div style="overflow:auto"><table><thead><tr><th>Producto</th><th>Cantidad</th></tr></thead><tbody>${rows}</tbody></table></div>`;
         grid.appendChild(card);
       });
+      allowedStores.forEach(storeId => { FERIA_PRODUCTS.forEach(p => {
+        const id = `fer-${storeId}-${p.key}`; const el = document.getElementById(id); if (!el) return;
+        el.addEventListener('change', ()=>{ const val = parseInt(el.value, 10); const clean = isNaN(val) ? 0 : val; db.ref(`pedidoFeria/${storeId}/${p.key}`).set(clean); });
+      }); });
       allowedStores.forEach(storeId => {
-        FERIA_PRODUCTS.forEach(p => {
-          const id = `fer-${storeId}-${p.key}`;
-          const el = document.getElementById(id);
-          if (!el) return;
-          el.addEventListener('change', ()=>{
-            const val = parseInt(el.value, 10);
-            const clean = isNaN(val) ? 0 : val;
-            db.ref(`pedidoFeria/${storeId}/${p.key}`).set(clean);
-          });
-        });
-      });
-      allowedStores.forEach(storeId => {
-        const ref = db.ref(`pedidoFeria/${storeId}`);
-        feriaListeners[storeId] = feriaListeners[storeId] || [];
+        const ref = db.ref(`pedidoFeria/${storeId}`); feriaListeners[storeId] = feriaListeners[storeId] || [];
         const onVal = ref.on('value', snap => {
-          const data = snap.val() || {};
-          FERIA_PRODUCTS.forEach(p => {
-            const el = document.getElementById(`fer-${storeId}-${p.key}`);
-            if (!el) return;
-            const v = data?.[p.key] ?? '';
-            el.value = v === 0 ? '' : v;
+          const data = snap.val() || {}; FERIA_PRODUCTS.forEach(p => {
+            const el = document.getElementById(`fer-${storeId}-${p.key}`); if (!el) return; const v = data?.[p.key] ?? ''; el.value = v === 0 ? '' : v;
           });
         });
         feriaListeners[storeId].push({ref,ev:'value',fn:onVal});
@@ -670,37 +643,21 @@
       const tfoot = document.getElementById('feriaTfoot');
       thead.innerHTML = tbody.innerHTML = tfoot.innerHTML = '';
 
-      const headTr = document.createElement('tr');
-      headers.forEach(h => { const th=document.createElement('th'); th.textContent=h; headTr.appendChild(th); });
-      thead.appendChild(headTr);
+      const headTr = document.createElement('tr'); headers.forEach(h => { const th=document.createElement('th'); th.textContent=h; headTr.appendChild(th); }); thead.appendChild(headTr);
 
       const resumen = [];
-
       FERIA_PRODUCTS.forEach(p => {
-        const rowCells = [p.label];
-        let rowTotal = 0;
-        storeIds.forEach((sid, idx) => {
-          const data = snaps[idx].val() || {};
-          const qty = parseInt(data?.[p.key] || 0, 10) || 0;
-          rowTotal += qty;
-          rowCells.push(qty);
-        });
+        const rowCells = [p.label]; let rowTotal = 0;
+        storeIds.forEach((sid, idx) => { const data = snaps[idx].val() || {}; const qty = parseInt(data?.[p.key] || 0, 10) || 0; rowTotal += qty; rowCells.push(qty); });
         if (rowTotal === 0) return;
         rowCells.push(rowTotal);
-        const tr = document.createElement('tr');
-        rowCells.forEach(v => { const td=document.createElement('td'); td.textContent=v; tr.appendChild(td); });
-        tbody.appendChild(tr);
+        const tr = document.createElement('tr'); rowCells.forEach(v => { const td=document.createElement('td'); td.textContent=v; tr.appendChild(td); }); tbody.appendChild(tr);
         resumen.push(`${p.label}: ${rowTotal}`);
       });
-
       const totalGeneral = Array.from(tbody.querySelectorAll('tr')).reduce((sum, tr) => sum + (parseInt(tr.lastChild.textContent||'0',10)||0), 0);
-      const trf = document.createElement('tr');
-      const tdf = document.createElement('td'); tdf.colSpan = 1 + storeIds.length; tdf.textContent = 'TOTAL GENERAL';
-      const tdf2 = document.createElement('td'); tdf2.textContent = totalGeneral;
-      trf.appendChild(tdf); trf.appendChild(tdf2); tfoot.appendChild(trf);
-
+      const trf = document.createElement('tr'); const tdf = document.createElement('td'); tdf.colSpan = 1 + storeIds.length; tdf.textContent = 'TOTAL GENERAL';
+      const tdf2 = document.createElement('td'); tdf2.textContent = totalGeneral; trf.appendChild(tdf); trf.appendChild(tdf2); tfoot.appendChild(trf);
       document.getElementById('feriaModal').style.display = 'flex';
-
       document.getElementById('feriaCopy').onclick = async ()=>{
         try{ await navigator.clipboard.writeText(resumen.join('\n') + `\nTOTAL GENERAL: ${totalGeneral}`); alert('Copiado'); }catch{ alert('No se pudo copiar'); }
       };
@@ -710,215 +667,82 @@
 
     // ===== Pedido Cigarros =====
     const CIG_PRODUCTS = [
-      // 20
-      { key:'pacifico_20', label:'Pacifico 20' },
-      { key:'bm_20', label:'BM 20' },
-      { key:'inamora_20', label:'Inamora 20' },
-      { key:'dual_20', label:'Dual 20' },
-      { key:'niagara_20', label:'Niagara 20' },
-      { key:'vista_20', label:'Vista 20' },
-      { key:'alaska_20', label:'Alaska 20' },
-      { key:'coro_20', label:'Coro 20' },
-      { key:'nevada_20', label:'Nevada 20' },
-      { key:'ocean_20', label:'Ocean 20' },
-      { key:'calif_20', label:'Calif 20' },
-      { key:'madison_20', label:'Madison 20' },
-      { key:'malboro_20', label:'Malboro 20' },
-      { key:'fiesta_20', label:'Fiesta 20' },
-      // Sueltos
-      { key:'cerrito', label:'Cerrito' },
-      { key:'peruano', label:'Peruano' },
-      // 14
-      { key:'coro_14', label:'Coro 14' },
-      { key:'nevada_14', label:'Nevada 14' },
-      // 10
-      { key:'coro_10', label:'Coro 10' },
-      { key:'nevada_10', label:'Nevada 10' },
-      { key:'ocean_10', label:'Ocean 10' },
-      { key:'calif_10', label:'Calif 10' },
-      { key:'fiesta_10', label:'Fiesta 10' },
-      { key:'malboro_10', label:'Malboro 10' },
-      { key:'pacifico_10', label:'Pacifico 10' },
-      { key:'bm_10', label:'BM 10' },
-      { key:'inamora_10', label:'Inamora 10' },
-      { key:'dual_10', label:'Dual 10' },
-      { key:'vista_10', label:'Vista 10' },
-      { key:'niagara_10', label:'Niagara 10' },
-      { key:'alaska_10', label:'Alaska 10' }
+      { key:'pacifico_20', label:'Pacifico 20' }, { key:'bm_20', label:'BM 20' }, { key:'inamora_20', label:'Inamora 20' }, { key:'dual_20', label:'Dual 20' },
+      { key:'niagara_20', label:'Niagara 20' }, { key:'vista_20', label:'Vista 20' }, { key:'alaska_20', label:'Alaska 20' }, { key:'coro_20', label:'Coro 20' },
+      { key:'nevada_20', label:'Nevada 20' }, { key:'ocean_20', label:'Ocean 20' }, { key:'calif_20', label:'Calif 20' }, { key:'madison_20', label:'Madison 20' },
+      { key:'malboro_20', label:'Malboro 20' }, { key:'fiesta_20', label:'Fiesta 20' },
+      { key:'cerrito', label:'Cerrito' }, { key:'peruano', label:'Peruano' },
+      { key:'coro_14', label:'Coro 14' }, { key:'nevada_14', label:'Nevada 14' },
+      { key:'coro_10', label:'Coro 10' }, { key:'nevada_10', label:'Nevada 10' }, { key:'ocean_10', label:'Ocean 10' }, { key:'calif_10', label:'Calif 10' }, { key:'fiesta_10', label:'Fiesta 10' },
+      { key:'malboro_10', label:'Malboro 10' }, { key:'pacifico_10', label:'Pacifico 10' }, { key:'bm_10', label:'BM 10' }, { key:'inamora_10', label:'Inamora 10' },
+      { key:'dual_10', label:'Dual 10' }, { key:'vista_10', label:'Vista 10' }, { key:'niagara_10', label:'Niagara 10' }, { key:'alaska_10', label:'Alaska 10' }
     ];
-    let cigPrices = {};  // { key: { costo, precio } }
-    let cigData = {};    // { storeId: { key: qty } }
-    let cigInputGrid = []; // navegación por flechas
-    let cigStoreIds = [];
-
+    let cigPrices = {};  let cigData = {};  let cigInputGrid = [];  let cigStoreIds = [];
     const CIG_PRICE_UPSERT = {
-      pacifico_20:{costo:2064, precio:2400},
-      bm_20:{costo:2064, precio:2400},
-      inamora_20:{costo:2064, precio:2400},
-      dual_20:{costo:2064, precio:2400},
-      vista_20:{costo:2064, precio:2400},
-      niagara_20:{costo:2064, precio:2400},
-      alaska_20:{costo:2064, precio:2400},
-      coro_20:{costo:1942, precio:2300},
-      nevada_20:{costo:1942, precio:2300},
-      ocean_20:{costo:1942, precio:2300},
-      calif_20:{costo:1942, precio:2300},
-      madison_20:{costo:1942, precio:2300},
-      malboro_20:{costo:2064, precio:2300},
-      cerrito:{costo:1349, precio:1600},
-      peruano:{costo:1349, precio:1600},
-      coro_14:{costo:1475, precio:1750},
-      nevada_14:{costo:1475, precio:1750},
-      coro_10:{costo:1019, precio:1250},
-      nevada_10:{costo:1019, precio:1250},
-      ocean_10:{costo:1019, precio:1250},
-      calif_10:{costo:1019, precio:1250},
-      fiesta_10:{costo:1019, precio:1250},
+      pacifico_20:{costo:2064, precio:2400}, bm_20:{costo:2064, precio:2400}, inamora_20:{costo:2064, precio:2400}, dual_20:{costo:2064, precio:2400},
+      vista_20:{costo:2064, precio:2400}, niagara_20:{costo:2064, precio:2400}, alaska_20:{costo:2064, precio:2400},
+      coro_20:{costo:1942, precio:2300}, nevada_20:{costo:1942, precio:2300}, ocean_20:{costo:1942, precio:2300}, calif_20:{costo:1942, precio:2300}, madison_20:{costo:1942, precio:2300},
+      malboro_20:{costo:2064, precio:2300}, cerrito:{costo:1349, precio:1600}, peruano:{costo:1349, precio:1600},
+      coro_14:{costo:1475, precio:1750}, nevada_14:{costo:1475, precio:1750},
+      coro_10:{costo:1019, precio:1250}, nevada_10:{costo:1019, precio:1250}, ocean_10:{costo:1019, precio:1250}, calif_10:{costo:1019, precio:1250}, fiesta_10:{costo:1019, precio:1250},
       malboro_10:{costo:1074, precio:1250},
-      pacifico_10:{costo:1074, precio:1400},
-      bm_10:{costo:1074, precio:1400},
-      inamora_10:{costo:1074, precio:1400},
-      dual_10:{costo:1074, precio:1400},
-      vista_10:{costo:1074, precio:1400},
-      alaska_10:{costo:1074, precio:1400},
-      niagara_10:{costo:1074, precio:1400}
+      pacifico_10:{costo:1074, precio:1400}, bm_10:{costo:1074, precio:1400}, inamora_10:{costo:1074, precio:1400}, dual_10:{costo:1074, precio:1400}, vista_10:{costo:1074, precio:1400}, alaska_10:{costo:1074, precio:1400}, niagara_10:{costo:1074, precio:1400}
     };
 
     function buildCigarrosUI(){
-      if (!isAdmin){
-        document.getElementById('tabCigarros').style.display = 'none';
-        document.getElementById('cigarrosSection').classList.add('hidden');
-        return;
-      } else {
-        document.getElementById('tabCigarros').style.display = '';
-      }
-      document.getElementById('cigPreciosBtn').classList.remove('hidden');
-      document.getElementById('cigCopyBtn').classList.remove('hidden');
-      document.getElementById('cigUniBtn').classList.remove('hidden');
-      document.getElementById('cigClearBtn').classList.remove('hidden');
+      if (!isAdmin){ document.getElementById('tabCigarros').style.display = 'none'; document.getElementById('cigarrosSection').classList.add('hidden'); return; }
+      document.getElementById('tabCigarros').style.display = '';
+      ['cigPreciosBtn','cigCopyBtn','cigUniBtn','cigClearBtn','cigSaveDay'].forEach(id=> document.getElementById(id).classList.remove('hidden'));
 
-      const thead = document.getElementById('cigThead');
-      const tbody = document.getElementById('cigTbody');
-      const tfoot = document.getElementById('cigTfoot');
+      const thead = document.getElementById('cigThead'), tbody = document.getElementById('cigTbody'), tfoot = document.getElementById('cigTfoot');
       thead.innerHTML = tbody.innerHTML = tfoot.innerHTML = '';
 
       cigStoreIds = Object.keys(storeLabels);
-      const head = document.createElement('tr');
-      ['Producto', ...cigStoreIds.map(sid=>storeLabels[sid]), 'Total'].forEach(h=>{
-        const th = document.createElement('th'); th.textContent=h; head.appendChild(th);
-      });
-      thead.appendChild(head);
-
-      // Separadores (2 líneas) y también después de Alaska 20
+      const head = document.createElement('tr'); ['Producto', ...cigStoreIds.map(sid=>storeLabels[sid]), 'Total'].forEach(h=>{ const th = document.createElement('th'); th.textContent=h; head.appendChild(th); }); thead.appendChild(head);
       const SEP_AFTER = new Set(['fiesta_20','peruano','nevada_14','malboro_10','alaska_20']);
-
       cigInputGrid = [];
       CIG_PRODUCTS.forEach((prod, rowIdx) => {
         const tr = document.createElement('tr'); tr.dataset.key = prod.key;
         const first = document.createElement('td'); first.textContent = prod.label; tr.appendChild(first);
         const rowInputs = [];
         cigStoreIds.forEach((sid, colIdx) => {
-          const td = document.createElement('td');
-          const inp = document.createElement('input');
-          inp.type='number'; inp.min='0'; inp.step='1';
-          inp.id=`cig-${sid}-${prod.key}`;
-          inp.dataset.row = rowIdx;
-          inp.dataset.col = colIdx;
+          const td = document.createElement('td'); const inp = document.createElement('input');
+          inp.type='number'; inp.min='0'; inp.step='1'; inp.id=`cig-${sid}-${prod.key}`; inp.dataset.row=rowIdx; inp.dataset.col=colIdx;
           inp.addEventListener('keydown', (e)=> handleCigArrows(e, inp));
-          inp.addEventListener('change', ()=>{
-            const v = parseInt(inp.value,10); const clean=isNaN(v)?0:v;
-            db.ref(`pedidoCigarros/${sid}/${prod.key}`).set(clean);
-          });
-          td.appendChild(inp); tr.appendChild(td);
-          rowInputs.push(inp);
+          inp.addEventListener('change', ()=>{ const v = parseInt(inp.value,10); const clean=isNaN(v)?0:v; db.ref(`pedidoCigarros/${sid}/${prod.key}`).set(clean); });
+          td.appendChild(inp); tr.appendChild(td); rowInputs.push(inp);
         });
-        const totalTd = document.createElement('td'); totalTd.id = `cig-total-${prod.key}`; totalTd.textContent='0'; tr.appendChild(totalTd);
-        tbody.appendChild(tr);
-        cigInputGrid.push(rowInputs);
-
-        if (SEP_AFTER.has(prod.key)){
-          for (let i=0;i<2;i++){
-            const sep=document.createElement('tr'); sep.className='sep';
-            const td=document.createElement('td'); td.colSpan=cigStoreIds.length+2; td.setAttribute('aria-hidden','true'); td.innerHTML='&nbsp;';
-            sep.appendChild(td); tbody.appendChild(sep);
-          }
-        }
+        const totalTd = document.createElement('td'); totalTd.id = `cig-total-${prod.key}`; totalTd.textContent='0'; tr.appendChild(totalTd); tbody.appendChild(tr); cigInputGrid.push(rowInputs);
+        if (SEP_AFTER.has(prod.key)){ for (let i=0;i<3;i++){ const sep=document.createElement('tr'); sep.className='sep'; const td=document.createElement('td'); td.colSpan=cigStoreIds.length+2; td.setAttribute('aria-hidden','true'); td.innerHTML='&nbsp;'; sep.appendChild(td); tbody.appendChild(sep);} }
       });
 
-      const importeRow = document.createElement('tr');
-      importeRow.innerHTML = `<td>TOTAL IMPORTE (UYU)</td>${cigStoreIds.map(sid=>`<td id="cig-importe-${sid}">—</td>`).join('')}<td id="cig-importe-general">—</td>`;
-      tfoot.appendChild(importeRow);
-      const profitRow = document.createElement('tr');
-      profitRow.innerHTML = `<td>GANANCIA (UYU)</td>${cigStoreIds.map(sid=>`<td id="cig-ganancia-${sid}">—</td>`).join('')}<td id="cig-ganancia-general">—</td>`;
-      tfoot.appendChild(profitRow);
-      const mauriRow = document.createElement('tr');
-      mauriRow.innerHTML = `<td>COSTO MAURI</td>${cigStoreIds.map(()=>`<td>—</td>`).join('')}<td id="cig-costo-mauri">—</td>`;
-      tfoot.appendChild(mauriRow);
+      const importeRow = document.createElement('tr'); importeRow.innerHTML = `<td>TOTAL IMPORTE (UYU)</td>${cigStoreIds.map(sid=>`<td id="cig-importe-${sid}">—</td>`).join('')}<td id="cig-importe-general">—</td>`; tfoot.appendChild(importeRow);
+      const profitRow = document.createElement('tr'); profitRow.innerHTML = `<td>GANANCIA (UYU)</td>${cigStoreIds.map(sid=>`<td id="cig-ganancia-${sid}">—</td>`).join('')}<td id="cig-ganancia-general">—</td>`; tfoot.appendChild(profitRow);
+      const mauriRow = document.createElement('tr'); mauriRow.innerHTML = `<td>COSTO MAURI</td>${cigStoreIds.map(()=>`<td>—</td>`).join('')}<td id="cig-costo-mauri">—</td>`; tfoot.appendChild(mauriRow);
 
-      const priceRef = db.ref('cigarrosPrecios');
-      const priceFn = priceRef.on('value', snap => { cigPrices = snap.val() || {}; recalcCigarros(); });
-      cigListeners['_prices'] = [{ref:priceRef, ev:'value', fn:priceFn}];
-
+      const priceRef = db.ref('cigarrosPrecios'); const priceFn = priceRef.on('value', snap => { cigPrices = snap.val() || {}; recalcCigarros(); }); cigListeners['_prices'] = [{ref:priceRef, ev:'value', fn:priceFn}];
       cigStoreIds.forEach(sid => {
-        const ref = db.ref(`pedidoCigarros/${sid}`);
-        const fn = ref.on('value', snap => {
-          cigData[sid] = snap.val() || {};
-          CIG_PRODUCTS.forEach((p) => {
-            const el = document.getElementById(`cig-${sid}-${p.key}`);
-            if (el){
-              const v = cigData[sid]?.[p.key] ?? '';
-              el.value = v === 0 ? '' : v;
-            }
-          });
+        const ref = db.ref(`pedidoCigarros/${sid}`); const fn = ref.on('value', snap => {
+          cigData[sid] = snap.val() || {}; CIG_PRODUCTS.forEach((p) => { const el = document.getElementById(`cig-${sid}-${p.key}`); if (el){ const v = cigData[sid]?.[p.key] ?? ''; el.value = v === 0 ? '' : v; } });
           recalcCigarros();
         });
-        cigListeners[sid] = cigListeners[sid] || [];
-        cigListeners[sid].push({ref, ev:'value', fn});
+        cigListeners[sid] = cigListeners[sid] || []; cigListeners[sid].push({ref, ev:'value', fn});
       });
-
       document.getElementById('cigCopyBtn').onclick = copyCigResumen;
       document.getElementById('cigPreciosBtn').onclick = openCigPrecios;
       document.getElementById('cigUniBtn').onclick = openCigUnificado;
       document.getElementById('cigClearBtn').onclick = clearCigAll;
+      document.getElementById('cigSaveDay').onclick = saveCigDay;
     }
-
-    function handleCigArrows(e, el){
-      const r = parseInt(el.dataset.row,10);
-      const c = parseInt(el.dataset.col,10);
-      if (Number.isNaN(r) || Number.isNaN(c)) return;
-      let target = null;
-      if (e.key === 'ArrowRight'){ target = cigInputGrid[r]?.[c+1] || null; }
-      else if (e.key === 'ArrowLeft'){ target = cigInputGrid[r]?.[c-1] || null; }
-      else if (e.key === 'ArrowDown'){ target = cigInputGrid[r+1]?.[c] || null; }
-      else if (e.key === 'ArrowUp'){ target = cigInputGrid[r-1]?.[c] || null; }
-      if (target){ e.preventDefault(); target.focus(); target.select(); }
-    }
-
+    function handleCigArrows(e, el){ const r = parseInt(el.dataset.row,10); const c = parseInt(el.dataset.col,10); if (Number.isNaN(r) || Number.isNaN(c)) return;
+      let target = null; if (e.key === 'ArrowRight'){ target = cigInputGrid[r]?.[c+1] || null; } else if (e.key === 'ArrowLeft'){ target = cigInputGrid[r]?.[c-1] || null; }
+      else if (e.key === 'ArrowDown'){ target = cigInputGrid[r+1]?.[c] || null; } else if (e.key === 'ArrowUp'){ target = cigInputGrid[r-1]?.[c] || null; } if (target){ e.preventDefault(); target.focus(); target.select(); } }
     function recalcCigarros(){
-      const storeIds = cigStoreIds.length ? cigStoreIds : Object.keys(storeLabels);
-      let importeGeneral = 0;
-      let gananciaGeneral = 0;
-
-      CIG_PRODUCTS.forEach(p => {
-        let rowTotal = 0;
-        storeIds.forEach(sid => {
-          const qty = parseInt(cigData?.[sid]?.[p.key] || 0, 10) || 0;
-          rowTotal += qty;
-        });
-        const td = document.getElementById(`cig-total-${p.key}`); if (td) td.textContent = rowTotal;
-      });
-
-      storeIds.forEach(sid => {
-        let importe = 0;
-        let ganancia = 0;
-        CIG_PRODUCTS.forEach(p => {
-          const qty = parseInt(cigData?.[sid]?.[p.key] || 0, 10) || 0;
-          const prec = cigPrices?.[p.key] || {};
-          const costo = parseFloat(prec.costo || 0) || 0;
-          const precio = parseFloat(prec.precio || 0) || 0;
-          importe += precio * qty;
-          ganancia += Math.max(0, (precio - costo)) * qty;
-        });
+      const storeIds = cigStoreIds.length ? cigStoreIds : Object.keys(storeLabels); let importeGeneral = 0, gananciaGeneral = 0;
+      CIG_PRODUCTS.forEach(p => { let rowTotal = 0; storeIds.forEach(sid => { const qty = parseInt(cigData?.[sid]?.[p.key] || 0, 10) || 0; rowTotal += qty; }); const td = document.getElementById(`cig-total-${p.key}`); if (td) td.textContent = rowTotal; });
+      storeIds.forEach(sid => { let importe = 0, ganancia = 0;
+        CIG_PRODUCTS.forEach(p => { const qty = parseInt(cigData?.[sid]?.[p.key] || 0, 10) || 0; const prec = cigPrices?.[p.key] || {}; const costo = parseFloat(prec.costo || 0) || 0; const precio = parseFloat(prec.precio || 0) || 0;
+          importe += precio * qty; ganancia += Math.max(0, (precio - costo)) * qty; });
         importeGeneral += importe; gananciaGeneral += ganancia;
         const impTd = document.getElementById(`cig-importe-${sid}`); if (impTd) impTd.textContent = importe > 0 ? importe.toFixed(2) : '—';
         const ganTd = document.getElementById(`cig-ganancia-${sid}`); if (ganTd) ganTd.textContent = ganancia > 0 ? ganancia.toFixed(2) : '—';
@@ -927,112 +751,70 @@
       const ganG = document.getElementById('cig-ganancia-general'); if (ganG) ganG.textContent = gananciaGeneral > 0 ? gananciaGeneral.toFixed(2) : '—';
       const costoMauriEl = document.getElementById('cig-costo-mauri'); if (costoMauriEl){ const cm = Math.max(0, importeGeneral - gananciaGeneral); costoMauriEl.textContent = cm > 0 ? cm.toFixed(2) : '—'; }
     }
-
+    function computeCigTotalsWithBreakdown(){
+      const storeIds = Object.keys(storeLabels); let importeGeneral = 0, gananciaGeneral = 0; const byStore = {};
+      storeIds.forEach(sid => { let gan = 0;
+        CIG_PRODUCTS.forEach(p => { const qty = parseInt(cigData?.[sid]?.[p.key] || 0, 10) || 0; const prec = cigPrices?.[p.key] || {}; const costo = parseFloat(prec.costo || 0) || 0; const precio = parseFloat(prec.precio || 0) || 0;
+          gan += Math.max(0, precio - costo) * qty; importeGeneral += precio * qty; gananciaGeneral += Math.max(0, precio - costo) * qty; });
+        byStore[sid] = Number(gan.toFixed(2));
+      });
+      const cm = Math.max(0, importeGeneral - gananciaGeneral);
+      return { importeGeneral, gananciaGeneral, costoMauri: cm, byStore };
+    }
+    async function saveCigDay(){
+      if (!isAdmin) return; const { y, m, day, hm, key, dkey, ts } = todayParts();
+      const t = computeCigTotalsWithBreakdown();
+      await db.ref(`ganancias/cigarros/${key}/${dkey}`).set({
+        importe: Number(t.importeGeneral.toFixed(2)),
+        ganancia: Number(t.gananciaGeneral.toFixed(2)),
+        costoMauri: Number(t.costoMauri.toFixed(2)),
+        byStore: t.byStore,
+        savedAt: ts, savedBy: DISPLAY_NAMES[currentUser] || currentUser
+      });
+      alert(`Ganancias de Cigarros guardadas para ${y}-${m}-${day} (${hm}).`);
+    }
     function copyCigResumen(){
-      const storeIds = cigStoreIds.length ? cigStoreIds : Object.keys(storeLabels);
-      const lines = [];
-      const imp = {}; const gan = {};
+      const storeIds = cigStoreIds.length ? cigStoreIds : Object.keys(storeLabels); const lines = []; const imp = {}; const gan = {};
       storeIds.forEach(sid => { imp[sid]=0; gan[sid]=0; });
-      CIG_PRODUCTS.forEach(p => {
-        const tot = storeIds.reduce((sum, sid)=> sum + (parseInt(cigData?.[sid]?.[p.key] || 0,10)||0), 0);
-        if (tot>0) lines.push(`${p.label}: ${tot}`);
-      });
-      storeIds.forEach(sid => {
-        CIG_PRODUCTS.forEach(p => {
-          const qty = parseInt(cigData?.[sid]?.[p.key] || 0, 10) || 0;
-          const prec = cigPrices?.[p.key] || {};
-          const costo = parseFloat(prec.costo || 0) || 0;
-          const precio = parseFloat(prec.precio || 0) || 0;
-          imp[sid] += precio*qty;
-          gan[sid] += Math.max(0, precio-costo)*qty;
-        });
-      });
-      const impG = Object.values(imp).reduce((a,b)=>a+b,0);
-      const ganG = Object.values(gan).reduce((a,b)=>a+b,0);
-      const costoMauri = Math.max(0, impG - ganG);
-      lines.push('---');
-      lines.push('TOTAL IMPORTE (UYU) por local:');
-      storeIds.forEach(sid => lines.push(`${storeLabels[sid]}: ${imp[sid].toFixed(2)}`));
-      lines.push(`GENERAL: ${impG.toFixed(2)}`);
-      lines.push('GANANCIA (UYU) por local:');
-      storeIds.forEach(sid => lines.push(`${storeLabels[sid]}: ${gan[sid].toFixed(2)}`));
-      lines.push(`GENERAL: ${ganG.toFixed(2)}`);
-      lines.push(`COSTO MAURI: ${costoMauri.toFixed(2)}`);
+      CIG_PRODUCTS.forEach(p => { const tot = storeIds.reduce((sum, sid)=> sum + (parseInt(cigData?.[sid]?.[p.key] || 0,10)||0), 0); if (tot>0) lines.push(`${p.label}: ${tot}`); });
+      storeIds.forEach(sid => { CIG_PRODUCTS.forEach(p => { const qty = parseInt(cigData?.[sid]?.[p.key] || 0, 10) || 0; const prec = cigPrices?.[p.key] || {}; const costo = parseFloat(prec.costo || 0) || 0; const precio = parseFloat(prec.precio || 0) || 0;
+        imp[sid] += precio*qty; gan[sid] += Math.max(0, precio-costo)*qty; }); });
+      const impG = Object.values(imp).reduce((a,b)=>a+b,0); const ganG = Object.values(gan).reduce((a,b)=>a+b,0); const costoMauri = Math.max(0, impG - ganG);
+      lines.push('---'); lines.push('TOTAL IMPORTE (UYU) por local:'); storeIds.forEach(sid => lines.push(`${storeLabels[sid]}: ${imp[sid].toFixed(2)}`));
+      lines.push(`GENERAL: ${impG.toFixed(2)}`); lines.push('GANANCIA (UYU) por local:'); storeIds.forEach(sid => lines.push(`${storeLabels[sid]}: ${gan[sid].toFixed(2)}`));
+      lines.push(`GENERAL: ${ganG.toFixed(2)}`); lines.push(`COSTO MAURI: ${costoMauri.toFixed(2)}`);
       navigator.clipboard.writeText(lines.join('\n')).then(()=> alert('Copiado al portapapeles')).catch(()=> alert('No se pudo copiar'));
     }
-
     async function clearCigAll(){
-      if (!isAdmin) return;
-      if (!confirm('¿Seguro querés poner todo en 0 para todos los locales?')) return;
-      const updates = {};
-      Object.keys(storeLabels).forEach(sid => {
-        CIG_PRODUCTS.forEach(p => { updates[`pedidoCigarros/${sid}/${p.key}`] = 0; });
-      });
-      await db.ref().update(updates);
+      if (!isAdmin) return; if (!confirm('¿Seguro querés poner todo en 0 para todos los locales?')) return;
+      const updates = {}; Object.keys(storeLabels).forEach(sid => { CIG_PRODUCTS.forEach(p => { updates[`pedidoCigarros/${sid}/${p.key}`] = 0; }); }); await db.ref().update(updates);
       alert('Pedido de cigarros limpiado.');
     }
-
     function openCigPrecios(){
-      const body = document.getElementById('cigPrecioBody');
-      body.innerHTML='';
-      CIG_PRODUCTS.forEach(p => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${p.label}</td>
-          <td><input type="number" step="0.01" min="0" id="cig-costo-${p.key}" placeholder="0.00" value="${(cigPrices?.[p.key]?.costo ?? '')}"></td>
-          <td><input type="number" step="0.01" min="0" id="cig-precio-${p.key}" placeholder="0.00" value="${(cigPrices?.[p.key]?.precio ?? '')}"></td>
-        `;
-        body.appendChild(tr);
-      });
+      const body = document.getElementById('cigPrecioBody'); body.innerHTML='';
+      CIG_PRODUCTS.forEach(p => { const tr = document.createElement('tr'); tr.innerHTML = `<td>${p.label}</td>
+        <td><input type="number" step="0.01" min="0" id="cig-costo-${p.key}" placeholder="0.00" value="${(cigPrices?.[p.key]?.costo ?? '')}"></td>
+        <td><input type="number" step="0.01" min="0" id="cig-precio-${p.key}" placeholder="0.00" value="${(cigPrices?.[p.key]?.precio ?? '')}"></td>`; body.appendChild(tr); });
       document.getElementById('cigPreciosModal').style.display='flex';
     }
     document.getElementById('cigPrecioClose').onclick = ()=> document.getElementById('cigPreciosModal').style.display='none';
     document.getElementById('cigPrecioSave').onclick = async ()=>{
-      const updates = {};
-      CIG_PRODUCTS.forEach(p => {
-        const costo = parseFloat(document.getElementById(`cig-costo-${p.key}`).value || '0') || 0;
-        const precio = parseFloat(document.getElementById(`cig-precio-${p.key}`).value || '0') || 0;
-        updates[p.key] = { costo, precio };
-      });
-      await db.ref('cigarrosPrecios').update(updates);
-      document.getElementById('cigPreciosModal').style.display='none';
+      const updates = {}; CIG_PRODUCTS.forEach(p => { const costo = parseFloat(document.getElementById(`cig-costo-${p.key}`).value || '0') || 0; const precio = parseFloat(document.getElementById(`cig-precio-${p.key}`).value || '0') || 0; updates[p.key] = { costo, precio }; });
+      await db.ref('cigarrosPrecios').update(updates); document.getElementById('cigPreciosModal').style.display='none';
     };
-
     function openCigUnificado(){
-      const storeIds = cigStoreIds.length ? cigStoreIds : Object.keys(storeLabels);
-      const tbody = document.getElementById('cigUniBody');
-      tbody.innerHTML='';
-      const lines = [];
-      CIG_PRODUCTS.forEach(p => {
-        const total = storeIds.reduce((sum,sid)=> sum + (parseInt(cigData?.[sid]?.[p.key] || 0,10)||0), 0);
-        if (total>0){
-          const tr = document.createElement('tr');
-          tr.innerHTML = `<td>${p.label}</td><td>${total}</td>`;
-          tbody.appendChild(tr);
-          lines.push(`${p.label}: ${total}`);
-        }
-      });
+      const storeIds = cigStoreIds.length ? cigStoreIds : Object.keys(storeLabels); const tbody = document.getElementById('cigUniBody'); tbody.innerHTML=''; const lines = [];
+      CIG_PRODUCTS.forEach(p => { const total = storeIds.reduce((sum,sid)=> sum + (parseInt(cigData?.[sid]?.[p.key] || 0,10)||0), 0);
+        if (total>0){ const tr = document.createElement('tr'); tr.innerHTML = `<td>${p.label}</td><td>${total}</td>`; tbody.appendChild(tr); lines.push(`${p.label}: ${total}`); } });
       document.getElementById('cigUniModal').style.display = 'flex';
-      document.getElementById('cigUniCopy').onclick = async ()=>{
-        try{ await navigator.clipboard.writeText(lines.join('\n')); alert('Copiado'); }catch{ alert('No se pudo copiar'); }
-      };
+      document.getElementById('cigUniCopy').onclick = async ()=>{ try{ await navigator.clipboard.writeText(lines.join('\n')); alert('Copiado'); }catch{ alert('No se pudo copiar'); } };
     }
     document.getElementById('cigUniClose').onclick = ()=> document.getElementById('cigUniModal').style.display='none';
 
-    // ===== Pedido Raspaditas =====
-    const RASP_CLASSES = [25,30,40,50,100];
-    const RASP_GAIN_PCT = 0.1395; // 13.95%
-    // Solo estos locales
-    const RASP_STORE_IDS = ['store1','store2','store3']; // Águila, 66, Parque
-    let raspModels = {};  // { clase: { modelKey: nombre } }
-    let raspData = {};    // { storeId: { clase: { modelKey: qty } } }
-    let raspInputGrid = [];
-    let raspStoreIds = []; // se fijará a RASP_STORE_IDS
-
-    function keyFromName(name){
-      return (name||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
-    }
-
+    // ===== Raspaditas =====
+    const RASP_CLASSES = [25,30,40,50,100]; const RASP_GAIN_PCT = 0.1395; const RASP_STORE_IDS = ['store1','store2','store3'];
+    let raspModels = {}; let raspData = {}; let raspInputGrid = []; let raspStoreIds = [];
+    function keyFromName(name){ return (name||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,''); }
     const DEFAULT_RASP_MODELS = {
       25: { [keyFromName('Numeros')]: 'Numeros' },
       30: (['Horoscopo','Arbol','Alquimista','Tateti','Emoticon','Yapa']).reduce((o,n)=> (o[keyFromName(n)]=n,o), {}),
@@ -1040,380 +822,225 @@
       50: (['Fuego Hielo','7 de Fuego','Banco','Cincuenta','3de3','Legionarios']).reduce((o,n)=> (o[keyFromName(n)]=n,o), {}),
       100: { [keyFromName('Bingo')]: 'Bingo' }
     };
-
-    async function ensureRaspModelsSeed(){
-      const snap = await db.ref('raspaditasModelos').once('value');
-      const cur = snap.val();
-      if (!cur){
-        await db.ref('raspaditasModelos').set(DEFAULT_RASP_MODELS);
-        raspModels = DEFAULT_RASP_MODELS;
-      } else {
-        raspModels = cur;
-      }
-    }
-
+    async function ensureRaspModelsSeed(){ const snap = await db.ref('raspaditasModelos').once('value'); const cur = snap.val(); if (!cur){ await db.ref('raspaditasModelos').set(DEFAULT_RASP_MODELS); raspModels = DEFAULT_RASP_MODELS; } else { raspModels = cur; } }
     let raspModelsListenerAttached = false;
-    function attachRaspModelsListenerOnce(){
-      if (raspModelsListenerAttached) return;
-      const mdlRef = db.ref('raspaditasModelos');
-      const onMdl = mdlRef.on('value', snap => {
-        raspModels = snap.val() || {};
-        buildRaspUI(); // reconstruye con nuevos modelos
-      });
-      raspListeners['_models'] = [{ref:mdlRef, ev:'value', fn:onMdl}];
-      raspModelsListenerAttached = true;
-    }
-
+    function attachRaspModelsListenerOnce(){ if (raspModelsListenerAttached) return; const mdlRef = db.ref('raspaditasModelos'); const onMdl = mdlRef.on('value', snap => { raspModels = snap.val() || {}; buildRaspUI(); });
+      raspListeners['_models'] = [{ref:mdlRef, ev:'value', fn:onMdl}]; raspModelsListenerAttached = true; }
     function buildRaspUI(){
-      if (!isAdmin){
-        document.getElementById('tabRasp').style.display='none';
-        document.getElementById('raspSection').classList.add('hidden');
-        return;
-      } else {
-        document.getElementById('tabRasp').style.display='';
-      }
-      document.getElementById('raspUniBtn').classList.remove('hidden');
-      document.getElementById('raspCopyBtn').classList.remove('hidden');
-      document.getElementById('raspClearBtn').classList.remove('hidden');
-      document.getElementById('raspModelBtn').classList.remove('hidden');
-
-      const thead = document.getElementById('raspThead');
-      const tbody = document.getElementById('raspTbody');
-      const tfoot = document.getElementById('raspTfoot');
-      thead.innerHTML = tbody.innerHTML = tfoot.innerHTML = '';
-
+      if (!isAdmin){ document.getElementById('tabRasp').style.display='none'; document.getElementById('raspSection').classList.add('hidden'); return; }
+      document.getElementById('tabRasp').style.display=''; ['raspUniBtn','raspCopyBtn','raspClearBtn','raspModelBtn','raspSaveDay'].forEach(id=> document.getElementById(id).classList.remove('hidden'));
+      const thead = document.getElementById('raspThead'), tbody = document.getElementById('raspTbody'), tfoot = document.getElementById('raspTfoot'); thead.innerHTML = tbody.innerHTML = tfoot.innerHTML = '';
       raspStoreIds = RASP_STORE_IDS.slice();
-      const head = document.createElement('tr');
-      ['Clase/Modelo', ...raspStoreIds.map(sid=>storeLabels[sid]), 'Total'].forEach(h=>{
-        const th = document.createElement('th'); th.textContent=h; head.appendChild(th);
-      });
-      thead.appendChild(head);
-
-      // Grid reset
-      raspInputGrid = [];
-      let rowIdx = 0;
+      const head = document.createElement('tr'); ['Clase/Modelo', ...raspStoreIds.map(sid=>storeLabels[sid]), 'Total'].forEach(h=>{ const th = document.createElement('th'); th.textContent=h; head.appendChild(th); }); thead.appendChild(head);
+      raspInputGrid = []; let rowIdx = 0;
       RASP_CLASSES.forEach(cls => {
-        // Group header row
-        const trh = document.createElement('tr'); trh.className='grp';
-        const th = document.createElement('td'); th.textContent = `Clase ${cls} UYU`; trh.appendChild(th);
-        for(let i=0;i<raspStoreIds.length+1;i++){ const td=document.createElement('td'); td.textContent = '—'; trh.appendChild(td); }
-        tbody.appendChild(trh);
-
-        const models = raspModels[cls] || {};
-        const modelEntries = Object.entries(models);
-        if (modelEntries.length === 0){
-          const tr = document.createElement('tr');
-          const td = document.createElement('td'); td.colSpan = raspStoreIds.length+2; td.innerHTML = '<span class="muted">No hay modelos cargados (usá "Editar modelos")</span>'; tr.appendChild(td);
-          tbody.appendChild(tr);
-          rowIdx++;
-        } else {
-          modelEntries.forEach(([mkey, mname]) => {
-            const tr = document.createElement('tr'); tr.dataset.cls = cls; tr.dataset.model = mkey;
-            const first = document.createElement('td'); first.textContent = `${mname}`; tr.appendChild(first);
-            const rowInputs = [];
-            raspStoreIds.forEach((sid, colIdx) => {
-              const td = document.createElement('td');
-              const inp = document.createElement('input');
-              inp.type='number'; inp.min='0'; inp.step='1';
-              inp.id = `rasp-${sid}-${cls}-${mkey}`;
-              inp.dataset.row = rowIdx;
-              inp.dataset.col = colIdx;
-              inp.addEventListener('keydown', (e)=> handleRaspArrows(e, inp));
-              inp.addEventListener('change', ()=>{
-                const v = parseInt(inp.value,10); const clean=isNaN(v)?0:v;
-                db.ref(`pedidoRasp/${sid}/${cls}/${mkey}`).set(clean);
-              });
-              td.appendChild(inp); tr.appendChild(td);
-              rowInputs.push(inp);
-            });
-            const totalTd = document.createElement('td'); totalTd.id = `rasp-total-${cls}-${mkey}`; totalTd.textContent='0'; tr.appendChild(totalTd);
-            tbody.appendChild(tr);
-            raspInputGrid[rowIdx] = rowInputs;
-            rowIdx++;
-          });
+        const trh = document.createElement('tr'); trh.className='grp'; const th = document.createElement('td'); th.textContent = `Clase ${cls} UYU`; trh.appendChild(th);
+        for(let i=0;i<raspStoreIds.length+1;i++){ const td=document.createElement('td'); td.textContent = '—'; trh.appendChild(td); } tbody.appendChild(trh);
+        const models = raspModels[cls] || {}; const modelEntries = Object.entries(models);
+        if (modelEntries.length === 0){ const tr = document.createElement('tr'); const td = document.createElement('td'); td.colSpan = raspStoreIds.length+2; td.innerHTML = '<span class="muted">No hay modelos cargados (usá "Editar modelos")</span>'; tr.appendChild(td); tbody.appendChild(tr); rowIdx++; }
+        else { modelEntries.forEach(([mkey, mname]) => { const tr = document.createElement('tr'); tr.dataset.cls = cls; tr.dataset.model = mkey;
+            const first = document.createElement('td'); first.textContent = `${mname}`; tr.appendChild(first); const rowInputs = [];
+            raspStoreIds.forEach((sid, colIdx) => { const td = document.createElement('td'); const inp = document.createElement('input'); inp.type='number'; inp.min='0'; inp.step='1'; inp.id = `rasp-${sid}-${cls}-${mkey}`; inp.dataset.row=rowIdx; inp.dataset.col=colIdx;
+              inp.addEventListener('keydown', (e)=> handleRaspArrows(e, inp)); inp.addEventListener('change', ()=>{ const v = parseInt(inp.value,10); const clean=isNaN(v)?0:v; db.ref(`pedidoRasp/${sid}/${cls}/${mkey}`).set(clean); });
+              td.appendChild(inp); tr.appendChild(td); rowInputs.push(inp); });
+            const totalTd = document.createElement('td'); totalTd.id = `rasp-total-${cls}-${mkey}`; totalTd.textContent='0'; tr.appendChild(totalTd); tbody.appendChild(tr); raspInputGrid[rowIdx] = rowInputs; rowIdx++; });
         }
-
-        // Separador tenue entre clases (2 líneas)
-        for (let i=0;i<2;i++){
-          const sep=document.createElement('tr'); sep.className='sep';
-          const td=document.createElement('td'); td.colSpan=raspStoreIds.length+2; td.setAttribute('aria-hidden','true'); td.innerHTML='&nbsp;';
-          sep.appendChild(td); tbody.appendChild(sep);
-        }
+        for (let i=0;i<3;i++){ const sep=document.createElement('tr'); sep.className='sep'; const td=document.createElement('td'); td.colSpan=raspStoreIds.length+2; td.setAttribute('aria-hidden','true'); td.innerHTML='&nbsp;'; sep.appendChild(td); tbody.appendChild(sep); }
       });
-
-      // Footer: Importe / Ganancia / Costo total
-      const importeRow = document.createElement('tr');
-      importeRow.innerHTML = `<td>TOTAL IMPORTE (UYU)</td>${raspStoreIds.map(sid=>`<td id="rasp-imp-${sid}">—</td>`).join('')}<td id="rasp-imp-G">—</td>`;
-      tfoot.appendChild(importeRow);
-      const ganRow = document.createElement('tr');
-      ganRow.innerHTML = `<td>GANANCIA 13.95% (UYU)</td>${raspStoreIds.map(sid=>`<td id="rasp-gan-${sid}">—</td>`).join('')}<td id="rasp-gan-G">—</td>`;
-      tfoot.appendChild(ganRow);
-      const costoRow = document.createElement('tr');
-      costoRow.innerHTML = `<td>COSTO TOTAL COMPRA (UYU)</td>${raspStoreIds.map(()=>`<td>—</td>`).join('')}<td id="rasp-cost-G">—</td>`;
-      tfoot.appendChild(costoRow);
-
-      // Listeners de cantidades por local
-      raspStoreIds.forEach(sid => {
-        const ref = db.ref(`pedidoRasp/${sid}`);
-        const fn = ref.on('value', snap => {
-          raspData[sid] = snap.val() || {};
-          RASP_CLASSES.forEach(cls => {
-            const models = raspModels[cls] || {};
-            Object.keys(models).forEach(mkey => {
-              const el = document.getElementById(`rasp-${sid}-${cls}-${mkey}`);
-              if (!el) return;
-              const val = raspData?.[sid]?.[cls]?.[mkey] ?? '';
-              el.value = val === 0 ? '' : val;
-            });
-          });
-          recalcRasp();
-        });
-        raspListeners[sid] = raspListeners[sid] || []; raspListeners[sid].push({ref,ev:'value',fn});
-      });
-
-      document.getElementById('raspCopyBtn').onclick = copyRasp;
-      document.getElementById('raspUniBtn').onclick = openRaspUni;
-      document.getElementById('raspClearBtn').onclick = clearRaspAll;
-      document.getElementById('raspModelBtn').onclick = openRaspModelEditor;
+      const importeRow = document.createElement('tr'); importeRow.innerHTML = `<td>TOTAL IMPORTE (UYU)</td>${raspStoreIds.map(sid=>`<td id="rasp-imp-${sid}">—</td>`).join('')}<td id="rasp-imp-G">—</td>`; tfoot.appendChild(importeRow);
+      const ganRow = document.createElement('tr'); ganRow.innerHTML = `<td>GANANCIA 13.95% (UYU)</td>${raspStoreIds.map(sid=>`<td id="rasp-gan-${sid}">—</td>`).join('')}<td id="rasp-gan-G">—</td>`; tfoot.appendChild(ganRow);
+      const costoRow = document.createElement('tr'); costoRow.innerHTML = `<td>COSTO TOTAL COMPRA (UYU)</td>${raspStoreIds.map(()=>`<td>—</td>`).join('')}<td id="rasp-cost-G">—</td>`; tfoot.appendChild(costoRow);
+      raspStoreIds.forEach(sid => { const ref = db.ref(`pedidoRasp/${sid}`); const fn = ref.on('value', snap => {
+          raspData[sid] = snap.val() || {}; RASP_CLASSES.forEach(cls => { const models = raspModels[cls] || {}; Object.keys(models).forEach(mkey => {
+            const el = document.getElementById(`rasp-${sid}-${cls}-${mkey}`); if (!el) return; const val = raspData?.[sid]?.[cls]?.[mkey] ?? ''; el.value = val === 0 ? '' : val; }); });
+          recalcRasp(); }); raspListeners[sid] = raspListeners[sid] || []; raspListeners[sid].push({ref,ev:'value',fn}); });
+      document.getElementById('raspCopyBtn').onclick = copyRasp; document.getElementById('raspUniBtn').onclick = openRaspUni; document.getElementById('raspClearBtn').onclick = clearRaspAll;
+      document.getElementById('raspModelBtn').onclick = openRaspModelEditor; document.getElementById('raspSaveDay').onclick = saveRaspDay;
     }
-
-    function handleRaspArrows(e, el){
-      const r = parseInt(el.dataset.row,10);
-      const c = parseInt(el.dataset.col,10);
-      if (Number.isNaN(r) || Number.isNaN(c)) return;
-      let target=null;
-      if (e.key==='ArrowRight'){ target = raspInputGrid[r]?.[c+1] || null; }
-      else if (e.key==='ArrowLeft'){ target = raspInputGrid[r]?.[c-1] || null; }
-      else if (e.key==='ArrowDown'){ target = raspInputGrid[r+1]?.[c] || null; }
-      else if (e.key==='ArrowUp'){ target = raspInputGrid[r-1]?.[c] || null; }
-      if (target){ e.preventDefault(); target.focus(); target.select(); }
-    }
-
+    function handleRaspArrows(e, el){ const r = parseInt(el.dataset.row,10); const c = parseInt(el.dataset.col,10); if (Number.isNaN(r) || Number.isNaN(c)) return;
+      let target=null; if (e.key==='ArrowRight'){ target = raspInputGrid[r]?.[c+1] || null; } else if (e.key==='ArrowLeft'){ target = raspInputGrid[r]?.[c-1] || null; }
+      else if (e.key==='ArrowDown'){ target = raspInputGrid[r+1]?.[c] || null; } else if (e.key==='ArrowUp'){ target = raspInputGrid[r-1]?.[c] || null; } if (target){ e.preventDefault(); target.focus(); target.select(); } }
     function recalcRasp(){
-      const storeIds = raspStoreIds.length ? raspStoreIds : ['store1','store2','store3'];
-      let impG = 0, ganG = 0;
-      RASP_CLASSES.forEach(cls => {
-        const models = raspModels[cls] || {};
-        Object.keys(models).forEach(mkey => {
-          let tot = 0;
-          storeIds.forEach(sid => { tot += parseInt(raspData?.[sid]?.[cls]?.[mkey]||0,10)||0; });
-          const td = document.getElementById(`rasp-total-${cls}-${mkey}`); if(td) td.textContent = tot;
-        });
-      });
-      storeIds.forEach(sid => {
-        let imp = 0;
-        RASP_CLASSES.forEach(cls => {
-          const models = raspModels[cls] || {};
-          Object.keys(models).forEach(mkey => {
-            const q = parseInt(raspData?.[sid]?.[cls]?.[mkey]||0,10)||0;
-            imp += q * cls;
-          });
-        });
-        const gan = imp * RASP_GAIN_PCT;
-        const impEl = document.getElementById(`rasp-imp-${sid}`); if (impEl) impEl.textContent = imp>0?imp.toFixed(2):'—';
-        const ganEl = document.getElementById(`rasp-gan-${sid}`); if (ganEl) ganEl.textContent = gan>0?gan.toFixed(2):'—';
-        impG += imp; ganG += gan;
-      });
+      const storeIds = raspStoreIds.length ? raspStoreIds : ['store1','store2','store3']; let impG = 0, ganG = 0;
+      RASP_CLASSES.forEach(cls => { const models = raspModels[cls] || {}; Object.keys(models).forEach(mkey => {
+        let tot = 0; storeIds.forEach(sid => { tot += parseInt(raspData?.[sid]?.[cls]?.[mkey]||0,10)||0; }); const td = document.getElementById(`rasp-total-${cls}-${mkey}`); if(td) td.textContent = tot; }); });
+      storeIds.forEach(sid => { let imp = 0; RASP_CLASSES.forEach(cls => { const models = raspModels[cls] || {}; Object.keys(models).forEach(mkey => { const q = parseInt(raspData?.[sid]?.[cls]?.[mkey]||0,10)||0; imp += q * cls; }); });
+        const gan = imp * RASP_GAIN_PCT; const impEl = document.getElementById(`rasp-imp-${sid}`); if (impEl) impEl.textContent = imp>0?imp.toFixed(2):'—';
+        const ganEl = document.getElementById(`rasp-gan-${sid}`); if (ganEl) ganEl.textContent = gan>0?gan.toFixed(2):'—'; impG += imp; ganG += gan; });
       const impGE = document.getElementById('rasp-imp-G'); if (impGE) impGE.textContent = impG>0?impG.toFixed(2):'—';
       const ganGE = document.getElementById('rasp-gan-G'); if (ganGE) ganGE.textContent = ganG>0?ganG.toFixed(2):'—';
       const costGE = document.getElementById('rasp-cost-G'); if (costGE) costGE.textContent = (impG-ganG)>0 ? (impG-ganG).toFixed(2) : '—';
     }
-
+    function computeRaspTotalsWithBreakdown(){
+      const storeIds = ['store1','store2','store3']; let impG = 0; const byStore = {};
+      storeIds.forEach(sid => { let imp=0; RASP_CLASSES.forEach(cls => { const models = raspModels[cls] || {}; Object.keys(models).forEach(mkey => { const q = parseInt(raspData?.[sid]?.[cls]?.[mkey]||0,10)||0; imp += q * cls; }); });
+        const gan = imp * RASP_GAIN_PCT; byStore[sid] = Number(gan.toFixed(2)); impG += imp; });
+      const ganG = impG * RASP_GAIN_PCT; const costo = Math.max(0, impG - ganG); return { importeGeneral: impG, gananciaGeneral: ganG, costoTotal: costo, byStore };
+    }
+    async function saveRaspDay(){
+      if (!isAdmin) return; const { y, m, day, hm, key, dkey, ts } = todayParts();
+      const t = computeRaspTotalsWithBreakdown();
+      await db.ref(`ganancias/raspaditas/${key}/${dkey}`).set({
+        importe: Number(t.importeGeneral.toFixed(2)),
+        ganancia: Number(t.gananciaGeneral.toFixed(2)),
+        costoTotal: Number(t.costoTotal.toFixed(2)),
+        byStore: t.byStore,
+        savedAt: ts, savedBy: DISPLAY_NAMES[currentUser] || currentUser
+      });
+      alert(`Ganancias de Raspaditas guardadas para ${y}-${m}-${day} (${hm}).`);
+    }
     function copyRasp(){
-      const storeIds = raspStoreIds.length ? raspStoreIds : ['store1','store2','store3'];
-      const lines = [];
-      RASP_CLASSES.forEach(cls => {
-        const models = raspModels[cls] || {};
-        const keys = Object.keys(models);
-        if (keys.length){
-          lines.push(`Clase ${cls}`);
-          keys.forEach(mkey => {
-            const total = storeIds.reduce((sum,sid)=> sum + (parseInt(raspData?.[sid]?.[cls]?.[mkey]||0,10)||0), 0);
-            if (total>0) lines.push(`- ${models[mkey]}: ${total}`);
-          });
-        }
-      });
-      // Totales
-      let impG=0, ganG=0;
-      storeIds.forEach(sid => {
-        let imp=0;
-        RASP_CLASSES.forEach(cls=>{
-          const models = raspModels[cls]||{};
-          Object.keys(models).forEach(mkey=>{ imp += (parseInt(raspData?.[sid]?.[cls]?.[mkey]||0,10)||0) * cls; });
-        });
-        const gan=imp*RASP_GAIN_PCT; impG+=imp; ganG+=gan;
-      });
-      lines.push('---');
-      lines.push(`TOTAL IMPORTE (UYU): ${impG.toFixed(2)}`);
-      lines.push(`GANANCIA 13.95% (UYU): ${ganG.toFixed(2)}`);
-      lines.push(`COSTO TOTAL COMPRA (UYU): ${(impG-ganG).toFixed(2)}`);
+      const storeIds = raspStoreIds.length ? raspStoreIds : ['store1','store2','store3']; const lines = [];
+      RASP_CLASSES.forEach(cls => { const models = raspModels[cls] || {}; const keys = Object.keys(models); if (keys.length){ lines.push(`Clase ${cls}`); keys.forEach(mkey => {
+        const total = storeIds.reduce((sum,sid)=> sum + (parseInt(raspData?.[sid]?.[cls]?.[mkey]||0,10)||0), 0); if (total>0) lines.push(`- ${models[mkey]}: ${total}`); }); } });
+      let impG=0, ganG=0; storeIds.forEach(sid => { let imp=0; RASP_CLASSES.forEach(cls=>{ const models = raspModels[cls]||{}; Object.keys(models).forEach(mkey=>{ imp += (parseInt(raspData?.[sid]?.[cls]?.[mkey]||0,10)||0) * cls; }); }); const gan=imp*RASP_GAIN_PCT; impG+=imp; ganG+=gan; });
+      lines.push('---'); lines.push(`TOTAL IMPORTE (UYU): ${impG.toFixed(2)}`); lines.push(`GANANCIA 13.95% (UYU): ${ganG.toFixed(2)}`); lines.push(`COSTO TOTAL COMPRA (UYU): ${(impG-ganG).toFixed(2)}`);
       navigator.clipboard.writeText(lines.join('\n')).then(()=> alert('Copiado al portapapeles')).catch(()=> alert('No se pudo copiar'));
     }
-
     async function clearRaspAll(){
-      if (!isAdmin) return;
-      if (!confirm('¿Seguro querés poner todo en 0 para Raspaditas (Águila/66/Parque)?')) return;
-      const updates = {};
-      ['store1','store2','store3'].forEach(sid => {
-        RASP_CLASSES.forEach(cls => {
-          const models = raspModels[cls] || {};
-          Object.keys(models).forEach(mkey => {
-            updates[`pedidoRasp/${sid}/${cls}/${mkey}`] = 0;
-          });
-        });
-      });
-      await db.ref().update(updates);
-      alert('Pedido de raspaditas limpiado.');
+      if (!isAdmin) return; if (!confirm('¿Seguro querés poner todo en 0 para Raspaditas (Águila/66/Parque)?')) return;
+      const updates = {}; ['store1','store2','store3'].forEach(sid => { RASP_CLASSES.forEach(cls => { const models = raspModels[cls] || {}; Object.keys(models).forEach(mkey => { updates[`pedidoRasp/${sid}/${cls}/${mkey}`] = 0; }); }); });
+      await db.ref().update(updates); alert('Pedido de raspaditas limpiado.');
     }
-
-    function openRaspModelEditor(){
-      const body = document.getElementById('raspModelBody');
-      body.innerHTML = '';
-      RASP_CLASSES.forEach(cls => {
-        const tr = document.createElement('tr');
-        const td1 = document.createElement('td'); td1.textContent = `Clase ${cls}`; tr.appendChild(td1);
-        const td2 = document.createElement('td');
-        const ta = document.createElement('textarea');
-        ta.style.width='100%'; ta.style.minHeight='80px'; ta.id = `rasp-models-${cls}`;
-        const models = raspModels[cls] || {};
-        ta.value = Object.values(models).join('\n');
-        td2.appendChild(ta); tr.appendChild(td2);
-        body.appendChild(tr);
-      });
+    function openRaspModelEditor(){ const body = document.getElementById('raspModelBody'); body.innerHTML = '';
+      RASP_CLASSES.forEach(cls => { const tr = document.createElement('tr'); const td1 = document.createElement('td'); td1.textContent = `Clase ${cls}`; tr.appendChild(td1);
+        const td2 = document.createElement('td'); const ta = document.createElement('textarea'); ta.style.width='100%'; ta.style.minHeight='80px'; ta.id = `rasp-models-${cls}`; const models = raspModels[cls] || {}; ta.value = Object.values(models).join('\n'); td2.appendChild(ta); tr.appendChild(td2); body.appendChild(tr); });
       document.getElementById('raspModelModal').style.display='flex';
     }
     document.getElementById('raspModelClose').onclick = ()=> document.getElementById('raspModelModal').style.display='none';
-    document.getElementById('raspModelSave').onclick = async ()=>{
-      const updates = {};
-      RASP_CLASSES.forEach(cls => {
-        const raw = (document.getElementById(`rasp-models-${cls}`).value||'').split('\n').map(s=>s.trim()).filter(Boolean);
-        const obj = {};
-        raw.forEach(name => { obj[keyFromName(name)] = name; });
-        updates[cls] = obj;
-      });
-      await db.ref('raspaditasModelos').set(updates);
-      document.getElementById('raspModelModal').style.display='none';
+    document.getElementById('raspModelSave').onclick = async ()=>{ const updates = {}; RASP_CLASSES.forEach(cls => {
+      const raw = (document.getElementById(`rasp-models-${cls}`).value||'').split('\n').map(s=>s.trim()).filter(Boolean); const obj = {}; raw.forEach(name => { obj[keyFromName(name)] = name; }); updates[cls] = obj; });
+      await db.ref('raspaditasModelos').set(updates); document.getElementById('raspModelModal').style.display='none';
     };
-
     function openRaspUni(){
-      const storeIds = raspStoreIds.length ? raspStoreIds : ['store1','store2','store3'];
-      const tbody = document.getElementById('raspUniBody');
-      tbody.innerHTML='';
-      const lines = [];
-      RASP_CLASSES.forEach(cls => {
-        const models = raspModels[cls] || {};
-        Object.entries(models).forEach(([mkey, mname]) => {
-          const total = storeIds.reduce((sum,sid)=> sum + (parseInt(raspData?.[sid]?.[cls]?.[mkey]||0,10)||0), 0);
-          if (total>0){
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td>${cls}</td><td>${mname}</td><td>${total}</td>`;
-            tbody.appendChild(tr);
-            lines.push(`${cls} - ${mname}: ${total}`);
-          }
-        });
-      });
-      document.getElementById('raspUniModal').style.display='flex';
-      document.getElementById('raspUniCopy').onclick = async ()=>{
-        try{ await navigator.clipboard.writeText(lines.join('\n')); alert('Copiado'); }catch{ alert('No se pudo copiar'); }
-      };
+      const storeIds = raspStoreIds.length ? raspStoreIds : ['store1','store2','store3']; const tbody = document.getElementById('raspUniBody'); tbody.innerHTML=''; const lines = [];
+      RASP_CLASSES.forEach(cls => { const models = raspModels[cls] || {}; Object.entries(models).forEach(([mkey, mname]) => {
+        const total = storeIds.reduce((sum,sid)=> sum + (parseInt(raspData?.[sid]?.[cls]?.[mkey]||0,10)||0), 0); if (total>0){ const tr = document.createElement('tr'); tr.innerHTML = `<td>${cls}</td><td>${mname}</td><td>${total}</td>`; tbody.appendChild(tr); lines.push(`${cls} - ${mname}: ${total}`); } });
+      }); document.getElementById('raspUniModal').style.display='flex';
+      document.getElementById('raspUniCopy').onclick = async ()=>{ try{ await navigator.clipboard.writeText(lines.join('\n')); alert('Copiado'); }catch{ alert('No se pudo copiar'); } };
     }
     document.getElementById('raspUniClose').onclick = ()=> document.getElementById('raspUniModal').style.display='none';
 
+    // ===== Ganancias (Mensual + Diario) – SOLO GANANCIAS por local + borrar día =====
+    function showGanTab(){
+      if (!isAdmin){ return; }
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth()+1).padStart(2,'0');
+      const day = String(d.getDate()).padStart(2,'0');
+      const monthInput = document.getElementById('ganMonth');
+      const dayInput = document.getElementById('ganDay');
+      if (monthInput && !monthInput.value) monthInput.value = `${y}-${m}`;
+      if (dayInput && !dayInput.value) dayInput.value = `${y}-${m}-${day}`;
+      loadMonthlyLocalGains(monthInput.value);
+      loadDailyLocalGains(dayInput.value);
+      document.getElementById('ganRefresh').onclick = ()=> loadMonthlyLocalGains(monthInput.value);
+      document.getElementById('ganViewDay').onclick = ()=> loadDailyLocalGains(dayInput.value);
+      document.getElementById('ganDeleteBtn').onclick = deleteSavedDay;
+    }
+
+    async function loadMonthlyLocalGains(key){
+      const body = document.getElementById('ganLocalBody'); const foot = document.getElementById('ganLocalFoot'); body.innerHTML=''; foot.innerHTML='';
+      const [snapC, snapR] = await Promise.all([ db.ref(`ganancias/cigarros/${key}`).once('value'), db.ref(`ganancias/raspaditas/${key}`).once('value') ]);
+      const C = snapC.val() || {}; const R = snapR.val() || {};
+      const totalsByStore = { store1:0, store2:0, store3:0, store4:0, store5:0 };
+      Object.values(C).forEach(e => { const bs = e?.byStore || {}; Object.keys(totalsByStore).forEach(sid => { totalsByStore[sid] += Number(bs[sid] || 0); }); });
+      Object.values(R).forEach(e => { const bs = e?.byStore || {}; ['store1','store2','store3'].forEach(sid => { totalsByStore[sid] += Number(bs[sid] || 0); }); });
+      let grand = 0;
+      Object.keys(totalsByStore).forEach(sid => {
+        const val = totalsByStore[sid]; grand += val;
+        const tr = document.createElement('tr'); tr.innerHTML = `<td>${storeLabels[sid]}</td><td>${val.toFixed(2)}</td>`; body.appendChild(tr);
+      });
+      const trf = document.createElement('tr'); trf.innerHTML = `<td>TOTAL MES</td><td>${grand.toFixed(2)}</td>`; foot.appendChild(trf);
+    }
+
+    async function loadDailyLocalGains(dateISO){
+      const [y, m, d] = dateISO.split('-');
+      const key = `${y}-${m}`;
+      const body = document.getElementById('ganDayBody'); const foot = document.getElementById('ganDayFoot');
+      const mtdLine = document.getElementById('ganMTDLine');
+      body.innerHTML=''; foot.innerHTML='';
+      const [snapCDay, snapRDay] = await Promise.all([ db.ref(`ganancias/cigarros/${key}/${d}`).once('value'), db.ref(`ganancias/raspaditas/${key}/${d}`).once('value') ]);
+      const CD = snapCDay.val() || {}; const RD = snapRDay.val() || {};
+      const totalsByStore = { store1:0, store2:0, store3:0, store4:0, store5:0 };
+      Object.keys(totalsByStore).forEach(sid => { const c = Number(CD?.byStore?.[sid] || 0); const r = Number(RD?.byStore?.[sid] || 0); totalsByStore[sid] = c + r; });
+      let grand = 0;
+      Object.keys(totalsByStore).forEach(sid => { const val = totalsByStore[sid]; grand += val; const tr = document.createElement('tr'); tr.innerHTML = `<td>${storeLabels[sid]}</td><td>${val.toFixed(2)}</td>`; body.appendChild(tr); });
+      const trf = document.createElement('tr'); trf.innerHTML = `<td>TOTAL DÍA</td><td>${grand.toFixed(2)}</td>`; foot.appendChild(trf);
+
+      // MTD (lo que va del mes) hasta ese día inclusive
+      const upto = parseInt(d,10);
+      const [snapCM, snapRM] = await Promise.all([ db.ref(`ganancias/cigarros/${key}`).once('value'), db.ref(`ganancias/raspaditas/${key}`).once('value') ]);
+      const Cm = snapCM.val() || {}; const Rm = snapRM.val() || {};
+      let grandMTD = 0;
+      Object.keys(Cm).forEach(dk => { if ((parseInt(dk,10)||0) <= upto){ const bs = Cm[dk]?.byStore || {}; Object.values(bs).forEach(v => grandMTD += Number(v||0)); } });
+      Object.keys(Rm).forEach(dk => { if ((parseInt(dk,10)||0) <= upto){ const bs = Rm[dk]?.byStore || {}; Object.values(bs).forEach(v => grandMTD += Number(v||0)); } });
+      mtdLine.textContent = `TOTAL MTD (hasta ${dateISO}): ${grandMTD.toFixed(2)} UYU`;
+    }
+
+    async function deleteSavedDay(){
+      const el = document.getElementById('ganDeleteDate'); const monthEl = document.getElementById('ganMonth'); const val = el.value;
+      if (!val){ alert('Elegí una fecha'); return; }
+      const [y, m, d] = val.split('-'); const key = `${y}-${m}`; const dkey = d;
+      if (!confirm(`¿Borrar día ${y}-${m}-${d}? Se eliminarán las ganancias guardadas de Cigarros y Raspaditas.`)) return;
+      await Promise.all([ db.ref(`ganancias/cigarros/${key}/${dkey}`).remove(), db.ref(`ganancias/raspaditas/${key}/${dkey}`).remove() ]);
+      alert('Día eliminado.');
+      const dayInput = document.getElementById('ganDay'); loadDailyLocalGains(dayInput.value); loadMonthlyLocalGains(monthEl.value || key);
+    }
+
     // ===== Tabs =====
     function activateTab(id){
-      ['#tabFaltantes','#tabBebidas','#tabFeria','#tabCigarros', '#tabRasp'].forEach(t=>{ const x=document.querySelector(t); if(x) x.classList.remove('active'); });
-      ['#faltantesSection','#bebidasSection','#feriaSection','#cigarrosSection', '#raspSection'].forEach(s=> document.querySelector(s).classList.add('hidden'));
-
-      if (id==='cigarros' && !isAdmin){ id = 'faltantes'; }
-      if (id==='rasp' && !isAdmin){ id = 'faltantes'; }
-
+      ['#tabFaltantes','#tabBebidas','#tabFeria','#tabCigarros', '#tabRasp', '#tabGan'].forEach(t=>{ const x=document.querySelector(t); if(x) x.classList.remove('active'); });
+      ['#faltantesSection','#bebidasSection','#feriaSection','#cigarrosSection', '#raspSection', '#ganSection'].forEach(s=> document.querySelector(s).classList.add('hidden'));
+      if (id==='cigarros' && !isAdmin){ id = 'faltantes'; } if (id==='rasp' && !isAdmin){ id = 'faltantes'; } if (id==='gan' && !isAdmin){ id = 'faltantes'; }
       if (id==='faltantes'){ document.querySelector('#tabFaltantes').classList.add('active'); document.querySelector('#faltantesSection').classList.remove('hidden'); }
       if (id==='bebidas'){ document.querySelector('#tabBebidas').classList.add('active'); document.querySelector('#bebidasSection').classList.remove('hidden'); }
       if (id==='feria'){ document.querySelector('#tabFeria').classList.add('active'); document.querySelector('#feriaSection').classList.remove('hidden'); }
       if (id==='cigarros'){ document.querySelector('#tabCigarros').classList.add('active'); document.querySelector('#cigarrosSection').classList.remove('hidden'); }
       if (id==='rasp'){ document.querySelector('#tabRasp').classList.add('active'); document.querySelector('#raspSection').classList.remove('hidden'); }
+      if (id==='gan'){ document.querySelector('#tabGan').classList.add('active'); document.querySelector('#ganSection').classList.remove('hidden'); showGanTab(); }
     }
     document.getElementById('tabFaltantes').addEventListener('click', ()=>activateTab('faltantes'));
     document.getElementById('tabBebidas').addEventListener('click', ()=>activateTab('bebidas'));
     document.getElementById('tabFeria').addEventListener('click', ()=>activateTab('feria'));
     document.getElementById('tabCigarros').addEventListener('click', ()=>activateTab('cigarros'));
     document.getElementById('tabRasp').addEventListener('click', ()=>activateTab('rasp'));
+    document.getElementById('tabGan').addEventListener('click', ()=>activateTab('gan'));
 
     // ===== Login =====
-    const userSel = document.getElementById('username');
-    const passInp = document.getElementById('password');
+    const userSel = document.getElementById('username'); const passInp = document.getElementById('password');
     userSel.addEventListener('change', ()=>{ passInp.classList.toggle('hidden', userSel.value !== 'admin'); });
     function showLoginError(msg){ const e=document.getElementById('loginError'); e.style.display='block'; e.textContent=msg; }
-
-    async function upsertCigPrices(){
-      await db.ref('cigarrosPrecios').update(CIG_PRICE_UPSERT);
-    }
-
+    async function upsertCigPrices(){ await db.ref('cigarrosPrecios').update({
+      pacifico_20:{costo:2064, precio:2400}, bm_20:{costo:2064, precio:2400}, inamora_20:{costo:2064, precio:2400}, dual_20:{costo:2064, precio:2400},
+      vista_20:{costo:2064, precio:2400}, niagara_20:{costo:2064, precio:2400}, alaska_20:{costo:2064, precio:2400},
+      coro_20:{costo:1942, precio:2300}, nevada_20:{costo:1942, precio:2300}, ocean_20:{costo:1942, precio:2300}, calif_20:{costo:1942, precio:2300}, madison_20:{costo:1942, precio:2300},
+      malboro_20:{costo:2064, precio:2300}, cerrito:{costo:1349, precio:1600}, peruano:{costo:1349, precio:1600},
+      coro_14:{costo:1475, precio:1750}, nevada_14:{costo:1475, precio:1750},
+      coro_10:{costo:1019, precio:1250}, nevada_10:{costo:1019, precio:1250}, ocean_10:{costo:1019, precio:1250}, calif_10:{costo:1019, precio:1250}, fiesta_10:{costo:1019, precio:1250},
+      malboro_10:{costo:1074, precio:1250},
+      pacifico_10:{costo:1074, precio:1400}, bm_10:{costo:1074, precio:1400}, inamora_10:{costo:1074, precio:1400}, dual_10:{costo:1074, precio:1400}, vista_10:{costo:1074, precio:1400}, alaska_10:{costo:1074, precio:1400}, niagara_10:{costo:1074, precio:1400}
+    }); }
     async function doLogin(){
-      const u = (userSel.value||'').toLowerCase();
-      if (!u){ showLoginError('Seleccione un usuario'); return; }
-      if (u === 'admin'){
-        if (passInp.value !== 'admin'){ showLoginError('Contraseña incorrecta'); return; }
-        isAdmin = true; allowedStores = Object.keys(storeLabels);
-      } else if (storeMap[u]){
-        isAdmin = false; allowedStores = storeMap[u];
-      } else { showLoginError('Usuario no autorizado'); return; }
-
-      currentUser = u;
-      document.getElementById('userTag').textContent = 'Usuario: ' + (DISPLAY_NAMES[currentUser] || currentUser);
-      document.getElementById('login').classList.add('hidden');
-      document.getElementById('app').classList.remove('hidden');
-      document.getElementById('loginError').style.display='none';
+      const u = (userSel.value||'').toLowerCase(); if (!u){ showLoginError('Seleccione un usuario'); return; }
+      if (u === 'admin'){ if (passInp.value !== 'admin'){ showLoginError('Contraseña incorrecta'); return; } isAdmin = true; allowedStores = Object.keys(storeLabels); }
+      else if (storeMap[u]){ isAdmin = false; allowedStores = storeMap[u]; } else { showLoginError('Usuario no autorizado'); return; }
+      currentUser = u; document.getElementById('userTag').textContent = 'Usuario: ' + (DISPLAY_NAMES[currentUser] || currentUser);
+      document.getElementById('login').classList.add('hidden'); document.getElementById('app').classList.remove('hidden'); document.getElementById('loginError').style.display='none';
       activateTab('faltantes');
-
-      Object.keys(storeLabels).forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = allowedStores.includes(id) ? 'block' : 'none';
-      });
-
-      document.getElementById('tabCigarros').style.display = isAdmin ? '' : 'none';
-      document.getElementById('tabRasp').style.display = isAdmin ? '' : 'none';
-
-      await upsertCigPrices();
-
-      // Seed y listener de modelos de raspaditas
-      await ensureRaspModelsSeed();
-      attachRaspModelsListenerOnce();
-
-      initFaltantesListeners();
-      buildBebidasUI();
-      buildFeriaUI();
-      if (isAdmin){
-        buildCigarrosUI();
-        buildRaspUI();
-      }
+      Object.keys(storeLabels).forEach(id => { const el = document.getElementById(id); if (el) el.style.display = allowedStores.includes(id) ? 'block' : 'none'; });
+      document.getElementById('tabCigarros').style.display = isAdmin ? '' : 'none'; document.getElementById('tabRasp').style.display = isAdmin ? '' : 'none'; document.getElementById('tabGan').style.display = isAdmin ? '' : 'none';
+      await upsertCigPrices(); await ensureRaspModelsSeed(); attachRaspModelsListenerOnce();
+      initFaltantesListeners(); buildBebidasUI(); buildFeriaUI(); if (isAdmin){ buildCigarrosUI(); buildRaspUI(); }
     }
     document.getElementById('login-btn').addEventListener('click', doLogin);
-    userSel.addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
-    passInp.addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
-
+    userSel.addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); }); passInp.addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
     document.getElementById('logout').addEventListener('click', ()=>{
-      detachAll();
-      raspModelsListenerAttached = false;
-      document.getElementById('login').classList.remove('hidden');
-      document.getElementById('app').classList.add('hidden');
-      userSel.value=''; passInp.value=''; passInp.classList.add('hidden');
-      document.getElementById('userTag').textContent = 'Usuario: —';
-      document.getElementById('loginError').style.display='none';
-      ['bebidas','feria'].forEach(x=>{
-        document.getElementById(x+'Thead').innerHTML='';
-        document.getElementById(x+'Tbody').innerHTML='';
-        document.getElementById(x+'Tfoot').innerHTML='';
-      });
-      ['bebidasGrid','feriaGrid','cigThead','cigTbody','cigTfoot','raspThead','raspTbody','raspTfoot'].forEach(id=>{
-        const el=document.getElementById(id); if(el) el.innerHTML='';
-      });
-      document.getElementById('bebidasModal').style.display='none';
-      document.getElementById('feriaModal').style.display='none';
-      document.getElementById('cigPreciosModal').style.display='none';
-      document.getElementById('cigUniModal').style.display='none';
-      document.getElementById('raspModelModal').style.display='none';
-      document.getElementById('raspUniModal').style.display='none';
+      detachAll(); raspModelsListenerAttached = false; document.getElementById('login').classList.remove('hidden'); document.getElementById('app').classList.add('hidden');
+      userSel.value=''; passInp.value=''; passInp.classList.add('hidden'); document.getElementById('userTag').textContent = 'Usuario: —'; document.getElementById('loginError').style.display='none';
+      ['bebidas','feria'].forEach(x=>{ document.getElementById(x+'Thead').innerHTML=''; document.getElementById(x+'Tbody').innerHTML=''; document.getElementById(x+'Tfoot').innerHTML=''; });
+      ['bebidasGrid','feriaGrid','cigThead','cigTbody','cigTfoot','raspThead','raspTbody','raspTfoot','ganLocalBody','ganLocalFoot','ganDayBody','ganDayFoot'].forEach(id=>{ const el=document.getElementById(id); if(el) el.innerHTML=''; });
+      ['bebidasModal','feriaModal','cigPreciosModal','cigUniModal','raspModelModal','raspUniModal'].forEach(id=>{ const el=document.getElementById(id); if (el) el.style.display='none'; });
     });
   </script>
 </body>
